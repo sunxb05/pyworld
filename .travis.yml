@@ -139,7 +139,7 @@ gcc-5-int64:
   except:
     - schedules
   script:
-    - apt-get install -y -q lapack64 lapack64-devel
+
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
     - python setup --int64 --blas=none --lapack=builtin --explicit-libs="-lopenblas64" --type=release
     - cd build
@@ -178,7 +178,7 @@ gcc-5-ompi-1.8-int64:
   except:
     - schedules
   script:
-    - apt-get install -y -q lapack64 lapack64-devel
+
     - module load mpi/openmpi-x86_64
     - mpirun --version
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
@@ -212,7 +212,7 @@ gcc-6-int64:
   except:
     - schedules
   script:
-    - apt-get install -y -q lapack64 lapack64-devel
+
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
     - python setup --int64 --blas=none --lapack=builtin --explicit-libs="-lopenblas64" --type=release
     - cd build
@@ -244,7 +244,7 @@ gcc-7-int64:
   except:
     - schedules
   script:
-    - apt-get install -y -q lapack64 lapack64-devel
+
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
     - python setup --int64 --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
     - cd build
@@ -276,7 +276,7 @@ gcc-8-int64:
   except:
     - schedules
   script:
-    - apt-get install -y -q lapack64 lapack64-devel
+
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
     - python setup --int64 --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
     - cd build
@@ -314,7 +314,7 @@ gcc-8-ompi-2.1-int64:
   except:
     - schedules
   script:
-    - apt-get install -y -q lapack64 lapack64-devel
+
     - module load mpi/openmpi-x86_64
     - mpirun --version
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
@@ -364,7 +364,7 @@ gcc-9-int64:
   except:
     - schedules
   script:
-    - apt-get install -y -q lapack64 lapack64-devel
+
     - export FFLAGS="-I/usr/lib64/gfortran/modules"
     - python setup --int64 --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
     - cd build
@@ -422,7 +422,7 @@ gcc-9-ompi-4.0-int64:
   except:
     - schedules
   script:
-    - apt-get install -y -q lapack64 lapack64-devel
+
     - module load mpi/openmpi-x86_64
     - mpirun --version
     - export FFLAGS="-I/usr/lib64/gfortran/modules"
@@ -443,7 +443,7 @@ gcc-9-mpich-3.3-int64:
     - schedules
   allow_failure: true
   script:
-    - apt-get install -y -q lapack64 lapack64-devel
+
     - module load mpi/mpich-x86_64
     - mpirun --version
     - export FFLAGS="-I/usr/lib64/gfortran/modules"
@@ -477,7 +477,7 @@ gcc-10-int64:
   except:
     - schedules
   script:
-    - apt-get install -y -q lapack64 lapack64-devel
+
     - export FFLAGS="-I/usr/lib64/gfortran/modules"
     - python setup --int64 --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
     - cd build
@@ -534,7 +534,7 @@ nightly-gcc-mpi-int64:
     - schedules
   allow_failure: true
   script:
-    - apt-get install -y -q lapack64 lapack64-devel
+
     - module load mpi/openmpi-x86_64
     - mpirun --version
     - python setup --int64 --mpi --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
