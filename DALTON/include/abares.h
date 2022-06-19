@@ -1,0 +1,6 @@
+      REAL*8  FINRES
+      INTEGER KZRED_ABA
+      LOGICAL NOCONV
+      CHARACTER*8 TRPLAB, IMGLAB
+      COMMON /ABAKRS/ FINRES, KZRED_ABA, NOCONV,                        &
+     &                TRPLAB(-MXCENT:9*MXCENT),IMGLAB(3*MXCENT + 3)

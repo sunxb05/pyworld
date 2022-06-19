@@ -1,0 +1,580 @@
+variables:
+  GIT_SSL_NO_VERIFY: "true"
+  GIT_STRATEGY: "fetch"
+  GIT_SUBMODULE_STRATEGY: "recursive"
+  GET_SOURCES_ATTEMPTS: "10"
+
+before_script:
+  - dnf upgrade -y -q
+  - dnf install -y -q gcc gcc-c++ gcc-gfortran openblas openblas-devel lapack lapack-devel
+                      mpich mpich-devel openmpi openmpi-devel hdf5 hdf5-devel git make cmake
+                      python python3 redhat-rpm-config findutils which procps-ng coreutils
+  - . ~/.bash_profile
+  - uname -a
+  - lscpu
+  - free -h
+  - gfortran --version
+  - gcc --version
+  - g++ --version
+  - python3 --version
+  - git --version
+  - cmake --version
+
+coverage:
+  image: fedora:29
+  tags:
+    - parallel
+  except:
+    - schedules
+  script:
+    - dnf install -y -q gcovr
+    - module load mpi/mpich-x86_64
+    - mpirun --version
+    - alternatives --install /usr/bin/python python /usr/bin/python3 1
+    - alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
+    - pip install -q codecov
+    - python setup --mpi --blas=none --lapack=none --explicit-libs="-lopenblaso -llapack" --type=release --coverage
+                   -DENABLE_PDE=ON
+    - cd build
+    - make -j 4
+    - export DALTON_LAUNCHER="mpirun -n 4"
+    - export OMP_NUM_THREADS=1
+    - ctest --output-on-failure -L dalton -LE "serial|long|verylong"
+    - export DALTON_LAUNCHER=""
+    - export OMP_NUM_THREADS=4
+    - ctest --output-on-failure -L serial -LE "long|verylong"
+    - ctest -D ExperimentalCoverage
+    - bash <(curl -s https://codecov.io/bash) -t 69d70b17-576f-459e-8f6c-409607c9f06b
+  interruptible: true
+
+intel:
+  image: fedora:32
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  allow_failure: true
+  before_script:
+    - dnf upgrade -y -q
+    - dnf install -y -q gcc gcc-c++ gcc-gfortran git make cmake python python3
+                        redhat-rpm-config findutils which procps-ng coreutils
+    - mv maintenance/oneAPI.repo /etc/yum.repos.d
+    - dnf install -y intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl
+    - set +e
+    - . /opt/intel/oneapi/setvars.sh
+    - set -e
+    - uname -a
+    - lscpu
+    - free -h
+    - ifort --version
+    - icc --version
+    - icpc --version
+    - python3 --version
+    - git --version
+    - cmake --version
+  script:
+    - python setup --fc=ifort --cc=icc --cxx=icpc --mkl=sequential --type=release
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential
+  interruptible: true
+
+intel-mpi:
+  image: fedora:32
+  variables:
+    DALTON_LAUNCHER: "mpirun -n 3"
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  allow_failure: true
+  before_script:
+    - dnf upgrade -y -q
+    - dnf install -y -q gcc gcc-c++ gcc-gfortran git make cmake python python3
+                        redhat-rpm-config findutils which procps-ng coreutils
+    - mv maintenance/oneAPI.repo /etc/yum.repos.d
+    - dnf install -y intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl intel-oneapi-mpi intel-oneapi-mpi-devel
+    - set +e
+    - . /opt/intel/oneapi/setvars.sh
+    - set -e
+    - uname -a
+    - lscpu
+    - free -h
+    - ifort --version
+    - icc --version
+    - icpc --version
+    - mpirun --version
+    - python3 --version
+    - git --version
+    - cmake --version
+  script:
+    - python setup --fc=mpiifort --cc=mpiicc --cxx=mpiicpc --mkl=sequential --type=release
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential
+  interruptible: true
+
+gcc-5:
+  image: fedora:23
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  script:
+    - alternatives --install /usr/bin/python python /usr/bin/python3 1
+    - export FFLAGS="-I/usr/lib64/gfortran/modules"
+    - python setup --blas=none --lapack=none --explicit-libs="-lopenblas -llapack" --type=release
+                   -DENABLE_PDE=ON
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential -E rsp_mnf
+  interruptible: true
+
+gcc-5-int64:
+  image: fedora:23
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  script:
+    - dnf install -y -q lapack64 lapack64-devel
+    - alternatives --install /usr/bin/python python /usr/bin/python3 1
+    - python setup --int64 --blas=none --lapack=builtin --explicit-libs="-lopenblas64" --type=release
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential -E rsp_mnf
+  interruptible: true
+
+gcc-5-ompi-1.8:
+  image: fedora:23
+  variables:
+    DALTON_LAUNCHER: "mpirun -n 4 --allow-run-as-root"
+    OMP_NUM_THREADS: "1"
+  tags:
+    - parallel
+  except:
+    - schedules
+  script:
+    - module load mpi/openmpi-x86_64
+    - mpirun --version
+    - alternatives --install /usr/bin/python python /usr/bin/python3 1
+    - export FFLAGS="-I/usr/lib64/gfortran/modules"
+    - python setup --mpi --blas=none --lapack=none --explicit-libs="-lopenblas -llapack" --type=release
+                   -DENABLE_PDE=ON
+    - cd build
+    - make -j 4
+    - ctest --output-on-failure -L essential -LE serial -E rsp_mnf
+  interruptible: true
+
+gcc-5-ompi-1.8-int64:
+  image: fedora:23
+  variables:
+    DALTON_LAUNCHER: "mpirun -n 4 --allow-run-as-root"
+    OMP_NUM_THREADS: "1"
+  tags:
+    - parallel
+  except:
+    - schedules
+  script:
+    - dnf install -y -q lapack64 lapack64-devel
+    - module load mpi/openmpi-x86_64
+    - mpirun --version
+    - alternatives --install /usr/bin/python python /usr/bin/python3 1
+    - python setup --int64 --mpi --blas=none --lapack=builtin --explicit-libs="-lopenblas64" --type=release
+    - cd build
+    - make -j 4
+    - ctest --output-on-failure -L essential -LE serial -E rsp_mnf
+  interruptible: true
+
+gcc-6:
+  image: fedora:25
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  script:
+    - alternatives --install /usr/bin/python python /usr/bin/python3 1
+    - python setup --blas=none --lapack=none --explicit-libs="-lopenblas -llapack" --type=release
+                   -DENABLE_PDE=ON
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential -E rsp_mnf
+  interruptible: true
+
+gcc-6-int64:
+  image: fedora:25
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  script:
+    - dnf install -y -q lapack64 lapack64-devel
+    - alternatives --install /usr/bin/python python /usr/bin/python3 1
+    - python setup --int64 --blas=none --lapack=builtin --explicit-libs="-lopenblas64" --type=release
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential -E rsp_mnf
+  interruptible: true
+
+gcc-7:
+  image: fedora:27
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  script:
+    - alternatives --install /usr/bin/python python /usr/bin/python3 1
+    - python setup --blas=none --lapack=none --explicit-libs="-lopenblas -llapack" --type=release
+                   -DENABLE_PDE=ON
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential
+  interruptible: true
+
+gcc-7-int64:
+  image: fedora:27
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  script:
+    - dnf install -y -q lapack64 lapack64-devel
+    - alternatives --install /usr/bin/python python /usr/bin/python3 1
+    - python setup --int64 --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential
+  interruptible: true
+
+gcc-8:
+  image: fedora:29
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  script:
+    - alternatives --install /usr/bin/python python /usr/bin/python3 1
+    - python setup --blas=none --lapack=none --explicit-libs="-lopenblas -llapack" --type=release
+                   -DENABLE_PDE=ON
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential
+  interruptible: true
+
+gcc-8-int64:
+  image: fedora:29
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  script:
+    - dnf install -y -q lapack64 lapack64-devel
+    - alternatives --install /usr/bin/python python /usr/bin/python3 1
+    - python setup --int64 --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential
+  interruptible: true
+
+gcc-8-ompi-2.1:
+  image: fedora:29
+  variables:
+    DALTON_LAUNCHER: "mpirun -n 4 --allow-run-as-root"
+    OMP_NUM_THREADS: "1"
+  tags:
+    - parallel
+  except:
+    - schedules
+  script:
+    - module load mpi/openmpi-x86_64
+    - mpirun --version
+    - alternatives --install /usr/bin/python python /usr/bin/python3 1
+    - python setup --mpi --blas=none --lapack=none --explicit-libs="-lopenblas -llapack" --type=release
+                   -DENABLE_PDE=ON
+    - cd build
+    - make -j 4
+    - ctest --output-on-failure -L essential -LE serial
+  interruptible: true
+
+gcc-8-ompi-2.1-int64:
+  image: fedora:29
+  variables:
+    DALTON_LAUNCHER: "mpirun -n 4 --allow-run-as-root"
+    OMP_NUM_THREADS: "1"
+  tags:
+    - parallel
+  except:
+    - schedules
+  script:
+    - dnf install -y -q lapack64 lapack64-devel
+    - module load mpi/openmpi-x86_64
+    - mpirun --version
+    - alternatives --install /usr/bin/python python /usr/bin/python3 1
+    - python setup --int64 --mpi --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
+    - cd build
+    - make -j 4
+    - ctest --output-on-failure -L essential -LE serial
+  interruptible: true
+
+gcc-9:
+  image: fedora:31
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  script:
+    - export FFLAGS="-I/usr/lib64/gfortran/modules"
+    - python setup --blas=none --lapack=none --explicit-libs="-lopenblas -llapack" --type=release
+                   -DENABLE_PDE=ON
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential
+  interruptible: true
+
+gcc-9-debug:
+  image: fedora:31
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  script:
+    - export FFLAGS="-I/usr/lib64/gfortran/modules"
+    - python setup --blas=none --lapack=none --explicit-libs="-lopenblas -llapack" --type=debug
+                   -DENABLE_PDE=ON
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential
+  interruptible: true
+
+gcc-9-int64:
+  image: fedora:31
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  script:
+    - dnf install -y -q lapack64 lapack64-devel
+    - export FFLAGS="-I/usr/lib64/gfortran/modules"
+    - python setup --int64 --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential
+  interruptible: true
+
+gcc-9-ompi-4.0:
+  image: fedora:31
+  variables:
+    DALTON_LAUNCHER: "mpirun -n 4 --allow-run-as-root"
+    OMP_NUM_THREADS: "1"
+  tags:
+    - parallel
+  except:
+    - schedules
+  script:
+    - module load mpi/openmpi-x86_64
+    - mpirun --version
+    - export FFLAGS="-I/usr/lib64/gfortran/modules"
+    - python setup --mpi --blas=none --lapack=none --explicit-libs="-lopenblas -llapack" --type=release
+                   -DENABLE_PDE=ON
+    - cd build
+    - make -j 4
+    - ctest --output-on-failure -L essential -LE serial
+  interruptible: true
+
+gcc-9-mpich-3.3:
+  image: fedora:31
+  variables:
+    DALTON_LAUNCHER: "mpirun -n 4"
+    OMP_NUM_THREADS: "1"
+  tags:
+    - parallel
+  except:
+    - schedules
+  script:
+    - module load mpi/mpich-x86_64
+    - mpirun --version
+    - export FFLAGS="-I/usr/lib64/gfortran/modules"
+    - python setup --mpi --blas=none --lapack=none --explicit-libs="-lopenblas -llapack" --type=release
+                   -DENABLE_PDE=ON
+    - cd build
+    - make -j 4
+    - ctest --output-on-failure -L essential -LE serial
+  interruptible: true
+
+gcc-9-ompi-4.0-int64:
+  image: fedora:31
+  variables:
+    DALTON_LAUNCHER: "mpirun -n 4 --allow-run-as-root"
+    OMP_NUM_THREADS: "1"
+  tags:
+    - parallel
+  except:
+    - schedules
+  script:
+    - dnf install -y -q lapack64 lapack64-devel
+    - module load mpi/openmpi-x86_64
+    - mpirun --version
+    - export FFLAGS="-I/usr/lib64/gfortran/modules"
+    - python setup --int64 --mpi --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
+    - cd build
+    - make -j 4
+    - ctest --output-on-failure -L essential -LE serial
+  interruptible: true
+
+gcc-9-mpich-3.3-int64:
+  image: fedora:31
+  variables:
+    DALTON_LAUNCHER: "mpirun -n 4"
+    OMP_NUM_THREADS: "1"
+  tags:
+    - parallel
+  except:
+    - schedules
+  allow_failure: true
+  script:
+    - dnf install -y -q lapack64 lapack64-devel
+    - module load mpi/mpich-x86_64
+    - mpirun --version
+    - export FFLAGS="-I/usr/lib64/gfortran/modules"
+    - python setup --int64 --mpi --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
+    - cd build
+    - make -j 4
+    - ctest --output-on-failure -L essential -LE serial --timeout 30
+  interruptible: true
+
+gcc-10:
+  image: fedora:32
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  script:
+    - export FFLAGS="-I/usr/lib64/gfortran/modules"
+    - python setup --blas=none --lapack=none --explicit-libs="-lopenblas -llapack" --type=release
+                   -DENABLE_PDE=ON
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential
+  interruptible: true
+
+gcc-10-int64:
+  image: fedora:32
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  except:
+    - schedules
+  script:
+    - dnf install -y -q lapack64 lapack64-devel
+    - export FFLAGS="-I/usr/lib64/gfortran/modules"
+    - python setup --int64 --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
+    - cd build
+    - make
+    - ctest --output-on-failure -L essential
+  interruptible: true
+
+nightly-gcc-serial:
+  image: fedora:31
+  variables:
+    DALTON_LAUNCHER: ""
+    OMP_NUM_THREADS: "1"
+  tags:
+    - parallel
+  only:
+    - schedules
+  allow_failure: true
+  script:
+    - export FFLAGS="-I/usr/lib64/gfortran/modules"
+    - python setup --blas=none --lapack=none --explicit-libs="-lopenblas -llapack" --type=release
+                   -DENABLE_PDE=ON -DSITE=GitLab -DBUILDNAME=$CI_COMMIT_REF_NAME-gcc-serial
+    - cd build
+    - export CTEST_MAKE_NUM_PROCS=4
+    - ctest -j 4 --output-on-failure -L dalton -M Nightly -T Build -T Test -T Submit
+
+nightly-gcc-mpi:
+  image: fedora:31
+  variables:
+    DALTON_LAUNCHER: "mpirun -n 4 --allow-run-as-root"
+    OMP_NUM_THREADS: "1"
+  tags:
+    - parallel
+  only:
+    - schedules
+  allow_failure: true
+  script:
+    - module load mpi/openmpi-x86_64
+    - mpirun --version
+    - export FFLAGS="-I/usr/lib64/gfortran/modules"
+    - python setup --mpi --blas=none --lapack=none --explicit-libs="-lopenblas -llapack" --type=release
+                   -DENABLE_PDE=ON -DSITE=GitLab -DBUILDNAME=$CI_COMMIT_REF_NAME-gcc-mpi
+    - cd build
+    - export CTEST_MAKE_NUM_PROCS=4
+    - ctest --output-on-failure -L dalton -M Nightly -T Build -T Test -T Submit
+
+nightly-gcc-mpi-int64:
+  image: fedora:31
+  variables:
+    DALTON_LAUNCHER: "mpirun -n 4 --allow-run-as-root"
+    OMP_NUM_THREADS: "1"
+  tags:
+    - parallel
+  only:
+    - schedules
+  allow_failure: true
+  script:
+    - dnf install -y -q lapack64 lapack64-devel
+    - module load mpi/openmpi-x86_64
+    - mpirun --version
+    - python setup --int64 --mpi --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
+                   -DSITE=GitLab -DBUILDNAME=$CI_COMMIT_REF_NAME-gcc-mpi-int64
+    - cd build
+    - export CTEST_MAKE_NUM_PROCS=4
+    - ctest --output-on-failure -L dalton -M Nightly -T Build -T Test -T Submit
+
+nightly-intel:
+  image: fedora:32
+  variables:
+    DALTON_LAUNCHER: "mpirun -n 4"
+    OMP_NUM_THREADS: "1"
+  tags:
+    - parallel
+  only:
+    - schedules
+  allow_failure: true
+  before_script:
+    - dnf upgrade -y -q
+    - dnf install -y -q gcc gcc-c++ gcc-gfortran git make cmake python python3
+                        redhat-rpm-config findutils which procps-ng coreutils
+    - mv maintenance/oneAPI.repo /etc/yum.repos.d
+    - dnf install -y intel-oneapi-ifort intel-oneapi-icc intel-oneapi-mkl intel-oneapi-mpi intel-oneapi-mpi-devel
+    - set +e
+    - . /opt/intel/inteloneapi/setvars.sh
+    - set -e
+    - uname -a
+    - lscpu
+    - free -h
+    - ifort --version
+    - icc --version
+    - icpc --version
+    - mpirun --version
+    - python3 --version
+    - git --version
+    - cmake --version
+  script:
+    - python setup --fc=mpiifort --cc=mpiicc --cxx=mpiicpc --mpi --mkl=sequential --type=release
+                   -DSITE=GitLab -DBUILDNAME=$CI_COMMIT_REF_NAME-intel-mpi
+    - cd build
+    - export CTEST_MAKE_NUM_PROCS=4
+    - ctest --output-on-failure -L dalton -M Nightly -T Build -T Test -T Submit

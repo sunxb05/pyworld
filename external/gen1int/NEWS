@@ -1,0 +1,42 @@
+!! list of user-visible changes worth mentioning, keep old items after the newer ones
+!! or move some older items into ONEWS when NEWS gets long refer the user to ONEWS at the end
+
+Version 0.2.1 (4 October 2010)
+========================================================================
+* NEW rewrite Gen1Int, and provide the Python interface
+* CHANGE rewrite the recurrence relations explicitly instead of using recursive
+         functions, to be more efficient
+* NEW implement London atomic-orbital in Version 0.2.0
+      implement rotational London atomic-orbital in Version 0.2.1
+      both of them are evaluated at zero fields
+* NEW implement CMake
+* NEW implement interface using C language
+
+Version 0.1.0 (26 September 2009)
+========================================================================
+* NEW release under GNU Lesser General Public License
+* CHANGE use type structure for the generalized one-electron operator
+* CHANGE move the geometric derivatives out of the definition of operator,
+         so it becomes easier and more efficient to compute geometric
+         derivatives of any property integrals to any order
+* CHANGE give up previous auxiliary function for operator 1/r_C^2 (because,
+         we failed to find a stable upward recursion relations); the new
+         auxiliary function for operator 1/r_C^2 is \int_0^1\exp(-T(1-u^2))u^{2n}du,
+         which requires different recursion relations for calculating integrals
+* CHANGE change the operators of property integral as one-dimensional array,
+         which is more convenient to sum over operators
+* FIX the bug for calculating derivatives -- we need to explicitly consider what the
+      derivatives will act, the center of bra, ket, r function or multipole moments,
+      using product rule in calculus and translation invariance
+* NEW calculations of expectation values
+* NEW allow the center of multipole moments always being the center of ket, for property
+      integrals "ANGLON"
+* NEW we use three level structures:
+      (1) type "g1prop" defines, like the geometric derivatives acting on a property,
+      (2) type "g1int1" defines the integrals belong to this property,
+      (3) type "g1opt" defines the generalized one-electron operators
+          belong to each property integral ("g1int1")
+* CHANGE add module "gen1int_derv" which takes care the derivatives
+* NEW magnetic derivatives of London atomic-orbital
+* FIX AO density matrix of open-shell system
+* FIX bug of transformation between Cartesian and Hermite Gaussians

@@ -1,0 +1,100 @@
+\documentclass{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage{tikz}
+
+%\usepackage[textwidth=1cm,textheight=22cm]{geometry}
+
+\setlength{\pdfpagewidth}{22.3cm}
+\setlength{\pdfpageheight}{13.1cm}
+%\setlength{\pdfvorigin}{25.4mm}
+
+\setlength{\textwidth}{22.3cm}
+\setlength{\textheight}{13.1cm}
+%\setlength{\evensidemargin}{-2.7cm}
+\setlength{\oddsidemargin}{-3.1cm}
+\setlength{\topmargin}{-4.5cm}
+\setlength{\headheight}{2cm}
+\setlength{\headsep}{0cm}
+
+\usetikzlibrary{shapes,arrows,shapes.geometric,calc,patterns}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+\begin{document}
+\pagestyle{empty}
+
+\tikzstyle{block}=[color=black, rectangle, fill=black!20, draw, sharp corners, very thin, node distance=0mm]
+\tikzstyle{arrow}=[draw, thick, -latex']
+
+\begin{tikzpicture}[scale=1, auto]
+
+% odd order
+%
+% s-shell geometric derivatives
+\node[block, minimum width=20mm, minimum height=2mm] at (29mm,0mm){};
+\node[block, minimum width=30mm, minimum height=2mm] at (54mm,0mm){};
+\node[block, minimum width=42mm, minimum height=2mm] at (90mm,0mm){};
+% p-shell geometric derivatives
+\node[block, minimum width=12mm, minimum height=6mm] at (13mm,4mm){};
+\node[block, minimum width=20mm, minimum height=6mm] at (29mm,4mm){};
+\node[block, minimum width=30mm, minimum height=6mm] at (54mm,4mm){};
+% d-shell geometric derivatives
+\node[block, minimum width=12mm, minimum height=12mm] at (13mm,13mm){};
+\node[block, minimum width=20mm, minimum height=12mm] at (29mm,13mm){};
+% f-shell geometric derivatives
+\node[block, minimum width=6mm, minimum height=20mm] at (4mm,29mm){};
+\node[block, minimum width=12mm, minimum height=20mm] at (13mm,29mm){};
+% g-shell geometric derivatives
+\node[block, minimum width=6mm, minimum height=30mm] at (4mm,54mm){};
+% h-shell geometric derivatives
+\node[block, minimum width=2mm, minimum height=42mm] at (0mm,90mm){};
+% axes
+\path[arrow](-1mm,-1mm)--node[yshift=-12mm]{\large\textbf{Order of Boys functions}}(118mm,-1mm);
+\node at (29mm,-4mm) {$\frac{|\boldsymbol{L}'_{C}|_{\min}+1}{2}$};
+\node at (90mm,-4mm) {$|\boldsymbol{L}'_{C}|_{\min}$};
+\path[arrow](-1mm,-1mm)--node[rotate=90, yshift=7mm, xshift=25mm]{\large\textbf{Order of geometric derivatives}}(-1mm,118mm);
+\node[rotate=90] at (-4mm,90mm) {$|\boldsymbol{L}'_{C}|_{\min}$};
+\node at (70mm,70mm) {\large\color{red}$\mod(|\boldsymbol{L}'_{C}|_{\min},2)=1$};
+% grids
+\draw[dashed](-1mm,1mm)--(7mm,1mm);
+\draw[dashed](-1mm,7mm)--(7mm,7mm);
+\draw[dashed](-1mm,19mm)--(1mm,19mm);
+\draw[dashed](-1mm,39mm)--(1mm,39mm);
+\draw[dashed](1mm,-1mm)--(1mm,19mm);
+\draw[dashed](7mm,-1mm)--(7mm,1mm);
+
+% even order
+%
+% s-shell geometric derivatives
+\node[block, minimum width=12mm, minimum height=2mm] at (149mm,0mm){};
+\node[block, minimum width=20mm, minimum height=2mm] at (165mm,0mm){};
+\node[block, minimum width=30mm, minimum height=2mm] at (190mm,0mm){};
+% p-shell geometric derivatives
+\node[block, minimum width=12mm, minimum height=6mm] at (149mm,4mm){};
+\node[block, minimum width=20mm, minimum height=6mm] at (165mm,4mm){};
+% d-shell geometric derivatives
+\node[block, minimum width=6mm, minimum height=12mm] at (140mm,13mm){};
+\node[block, minimum width=12mm, minimum height=12mm] at (149mm,13mm){};
+% f-shell geometric derivatives
+\node[block, minimum width=6mm, minimum height=20mm] at (140mm,29mm){};
+% g-shell geometric derivatives
+\node[block, minimum width=2mm, minimum height=30mm] at (136mm,54mm){};
+% axes
+\path[arrow](135mm,-1mm)--node[yshift=-12mm]{\large\textbf{Order of Boys functions}}(212mm,-1mm);
+\node at (149mm,-4mm) {$\frac{|\boldsymbol{L}'_{C}|_{\min}}{2}$};
+\node at (190mm,-4mm) {$|\boldsymbol{L}'_{C}|_{\min}$};
+\path[arrow](135mm,-1mm)--node[rotate=90, yshift=8mm, xshift=25mm]{\large\textbf{Order of geometric derivatives}}(135mm,118mm);
+\node[rotate=90] at (132mm,54mm) {$|\boldsymbol{L}'_{C}|_{\min}$};
+\node at (180mm,70mm) {\large\color{red}$\mod(|\boldsymbol{L}'_{C}|_{\min},2)=0$};
+% grids
+\draw[dashed](135mm,1mm)--(143mm,1mm);
+\draw[dashed](135mm,7mm)--(137mm,7mm);
+\draw[dashed](135mm,19mm)--(137mm,19mm);
+\draw[dashed](137mm,-1mm)--(137mm,7mm);
+
+\end{tikzpicture}
+
+\end{document}

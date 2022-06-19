@@ -1,0 +1,1357 @@
+#define IPRPAR_DEBUG -1
+!
+!  Dalton, a molecular electronic structure program
+!  Copyright (C) by the authors of Dalton.
+!
+!  This program is free software; you can redistribute it and/or
+!  modify it under the terms of the GNU Lesser General Public
+!  License version 2.1 as published by the Free Software Foundation.
+!
+!  This program is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+!  Lesser General Public License for more details.
+!
+!  If a copy of the GNU LGPL v2.1 was not distributed with this
+!  code, you can obtain one at https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html.
+!
+!
+C
+C FILE: eri2par.F
+C
+C  /* Deck eri_pardrv */
+      SUBROUTINE ERI_PARDRV(FMAT,DMAT,NDMAT,ISYMDM,IFCTYP,NSTAT,
+     &                      WORK,LWORK,IPRINT)
+C
+C     **********************************************************
+C     *    Driver routine for the parallel ERI calculation.    *
+C     **********************************************************
+C
+C
+C      A short survey of the different messagetags (MTAGX) :
+C
+C      10 - Tell nodes this is an ERI run, send NCODE and IPRINT
+C      30 - Send initialization, new input information and DMAT
+C      40 - Receive NODCLS and NTASK from node 1
+C      50 - Receive (I|J) request from node
+C      60 - Send new (I|J) labels to node
+C      70 - Receive fock matrix from nodes if MEMOK
+C      80 - Receive overall timings
+C
+C
+#include "implicit.h"
+#include "priunit.h"
+#include "iratdef.h"
+C
+      LOGICAL FIRST
+      DIMENSION FMAT(*), DMAT(*), ISYMDM(*), IFCTYP(*),
+     &          NSTAT(NODTOT), WORK(LWORK)
+C
+C Used from common blocks
+C
+C GNRINF : NEWBAS, NEWGEO
+C INFORB : N2BASX
+C INFPAR : NODTOT, NCODE, NTASK
+C
+#include "gnrinf.h"
+#include "inforb.h"
+#include "infpar.h"
+C
+      SAVE FIRST
+      DATA FIRST/.TRUE./
+C
+      CALL QENTER('ERI_PARDRV')
+C
+      IF (IPRINT .GT. 3) CALL TITLER('Output from ERI_PARDRV','*',103)
+C
+C     Consistancy check
+C
+      CALL ERI_CONCHK(NDMAT,ISYMDM,IFCTYP)
+C
+C     Initialization in ER2INI (Set /CBIERI/)
+C
+      CALL ER2INI
+C
+C     Send initialization to nodes
+C
+      CALL ERI_SDINIT(DMAT,ISYMDM,NDMAT,IFCTYP,FIRST,IPRINT)
+C
+C     Receive number of OD classes from node 1. (Letting Master
+C     calculate it is waste of CPU time). Also get NTASK
+C
+      CALL ERI_RVCLS(NODCLS,IPRINT)
+C
+C     Workspace allocation for parallel ERI calculation
+C     =================================================
+C
+C     Number of (class|class) integrals
+C
+      MXCLS2 = NODCLS*(NODCLS + 1)/2
+C
+C     Dimension of array INDEX
+C
+      IBLOCK = NODTOT*NTASK
+      NINDEX = (IBLOCK + 1)*INT(MXCLS2/IBLOCK + 1)
+C
+      KTMPMT = 1
+      KINDEX = KTMPMT +  N2BASX
+      KTIMES = KINDEX + (NINDEX + 1)/IRAT
+      KWHICH = KTIMES +  MXCLS2
+      KCLCPU = KWHICH + (MXCLS2 + 1)/IRAT
+      KLAST  = KCLCPU +  MXCLS2
+C
+      IF (KLAST .GT. LWORK) CALL STOPIT('ERI_PARDRV',' ',KLAST,LWORK)
+      LWRK = LWORK - KLAST
+C
+      CALL ERI_PARDR1(FMAT,DMAT,NSTAT,WORK(KTMPMT),WORK(KINDEX),
+     &                WORK(KTIMES),WORK(KWHICH),WORK(KCLCPU),
+     &                WORK(KLAST),LWRK,NINDEX,MXCLS2,
+     &                FIRST,IPRINT)
+C
+      IF (FIRST)  FIRST  = .FALSE.
+      IF (NEWGEO) NEWGEO = .FALSE.
+      IF (NEWBAS) NEWBAS = .FALSE.
+C
+      CALL QEXIT('ERI_PARDRV')
+      RETURN
+      END
+C  /* Deck eri_conchk */
+      SUBROUTINE ERI_CONCHK(NDMAT,ISYMDM,IFCTYP)
+C
+#include "implicit.h"
+#include "priunit.h"
+C
+      DIMENSION ISYMDM(NDMAT), IFCTYP(NDMAT)
+C
+CTROND      IF (IFCTYP(1).NE.1) THE
+      IF (IFCTYP(1).NE.13) THEN
+         WRITE (LUPRI,'(/,A,I5,/A)')
+CTROND     &        ' IFCTYP different from 1 or 3 in ERI_CONCHK',
+     &        ' IFCTYP different from 13 or 3 in ERI_CONCHK',
+     &          IFCTYP, ' Process aborted.'
+CTROND         CALL QUIT('IFCTYP .ne. 1 in ERI_CONCHK.')
+         CALL QUIT('IFCTYP .ne. 13 in ERI_CONCHK.')
+      END IF
+      IF (NDMAT .GT. 1) THEN
+         WRITE (LUPRI,'(/A,I5,/A)')
+     &        ' NDMAT .gt. 1 in ERI_CONCHK.',
+     &          NDMAT, ' Process aborted'
+         CALL QUIT('NDMAT .gt. 1 in ERI_CONCHK')
+      END IF
+      IF (ISYMDM(1) .NE. 0) THEN
+         WRITE (LUPRI, '(/A,I5,/A)')
+     &        ' ISYMDM .ne. 1 in ERI_CONCHK',
+     &          ISYMDM(1), ' Process aborted'
+         CALL QUIT('ISYMDM .ne. 1 in ERI_CONCHK')
+      END IF
+C
+      RETURN
+      END
+C  /* Deck eri_sdinit */
+      SUBROUTINE ERI_SDINIT(DMAT,ISYMDM,NDMT,IFCTYP,FIRST,IPRINT)
+C
+#include "implicit.h"
+#include "priunit.h"
+#include "mxcent.h"
+#include "mtags.h"
+C
+      LOGICAL FIRST
+      DIMENSION DMAT(*), ISYMDM(NDMT), IFCTYP(NDMT)
+C
+C Used from common blocks
+C
+C MXCENT : MXCENT (for MOLINP)
+C GNRINF : NEWBAS, NEWGEO
+C MOLINP : NMLINE
+C MOLINC : MLINE()
+C INFORB : *
+C INFPAR : *
+C CBIERI : *
+C
+#include "gnrinf.h"
+#include "molinp.h"
+#include "inforb.h"
+#include "infpar.h"
+#include "r12int.h"
+#include "cbieri.h"
+#include "cbirea.h"
+C
+      NDMAT = NDMT
+C
+      IF (IPRINT .GT. 3) CALL TITLER('Output from ERI_SDINIT','*',103)
+C
+#if defined (VAR_MPI)
+C
+C     Tell nodes whether they will receive new input.
+C
+      CALL MPIXBCAST(FIRST ,1,'LOGICAL',MASTER)
+      CALL MPIXBCAST(NEWGEO,1,'LOGICAL',MASTER)
+      CALL MPIXBCAST(NEWBAS,1,'LOGICAL',MASTER)
+C
+C     Send  /MOLINC/, /MOLINP/, /INFORB/, /INFPAR/ and /CBIERI/
+C
+      IF (FIRST .OR. NEWBAS .OR. NEWGEO) THEN
+         IF (IPRINT .GT. 3) WRITE(LUPRI,'(/1X,A,/,1X,A,3L3)')
+     &        ' Sending new orbital inf.',
+     &        ' FIRST,NEWBAS,NEWGEO :',FIRST,NEWBAS,NEWGEO
+C   /molinp/
+         CALL MPIXBCAST(NMLINE,1,'INTEGER',MASTER)
+C   /molinc/
+         CALL MPIXBCAST(MLINE,len_MLINE*NMLINE,'STRING',MASTER)
+C   /inforb/
+         CALL MPIXBCAST(MULD2H,NINFI,'INTEGER',MASTER)
+C   /infpar/
+         CALL MPIXBCAST(NODTOT,NPARI,'INTEGER',MASTER)
+C   /cbieri/
+         CALL MPIXBCAST(NDMAT ,NCBII,'INTEGER',MASTER)
+         CALL MPIXBCAST(RUNERI,NCBIL,'LOGICAL',MASTER)
+C   /cbirea/
+         CALL MPIXBCAST(LCMMAX,1,'INTEGER',MASTER)
+         CALL MPIXBCAST(NCMSTR,1,'INTEGER',MASTER)
+         CALL MPIXBCAST(NCMEND,1,'INTEGER',MASTER)
+         CALL MPIXBCAST(LCNTNUUM,1,'LOGICAL',MASTER)
+C  comr12
+         CALL MPIXBCAST(R12INT,NR12L,'LOGICAL',MASTER)
+         CALL MPIXBCAST(LMULBS,1,'LOGICAL',MASTER)
+         CALL MPIXBCAST(INTGAC,NR12I,'INTEGER',MASTER)
+      END IF
+      CALL MPIXBCAST(ISYMDM,NDMAT,'INTEGER',MASTER)
+      CALL MPIXBCAST(IFCTYP,NDMAT,'INTEGER',MASTER)
+      CALL MPIXBCAST(DMAT,N2BASX ,'DOUBLE' ,MASTER)
+#endif
+C
+      RETURN
+      END
+C  /* Deck eri_rvcls */
+      SUBROUTINE ERI_RVCLS(NODCLS,IPRINT)
+C
+C     Receive number of OD classes from node 1. (Letting Master
+C     calculate it is waste of CPU time). Also get NTASK
+C
+#include "implicit.h"
+#include "mtags.h"
+C
+C Used from common blocks
+C
+C  INFPAR: NTASK
+C
+#include "infpar.h"
+C
+      IF (IPRINT .GT. 3) CALL TITLER('Output from ERI_RVCLS','*',103)
+C
+#if defined (VAR_MPI)
+      CALL MPIXRECV(NODCLS,1,'INTEGER',1,MTAG4)
+      CALL MPIXRECV(NTASK ,1,'INTEGER',1,MTAG4)
+#endif
+C
+      RETURN
+      END
+C  /* Deck eri_pardr1 */
+      SUBROUTINE ERI_PARDR1(FMAT,DMAT,NSTAT,TMPMAT,INDEX,TIMES,
+     &                      IWHICH,CLSCPU,WORK,LWORK,NINDEX,
+     &                      MXCLS2,FIRST,IPRINT)
+C
+#include "implicit.h"
+#include "priunit.h"
+#include "mtags.h"
+C
+Cef Dimension of array INDEX changed from INDEX(NINDEX) to INDEX(3,NINDEX)
+      LOGICAL FIRST
+      DIMENSION FMAT(*), DMAT(*), NSTAT(NODTOT), TMPMAT(*),
+     &          TIMES(MXCLS2), INDEX(3,NINDEX), IWHICH(MXCLS2),
+     &          CLSCPU(MXCLS2), WORK(LWORK)
+C
+C Used from common blocks
+C
+C GNRINF : NEWBAS, NEWGEO
+C INFPAR : NODTOT, NTASK, TIMING
+C
+#include "gnrinf.h"
+#include "infpar.h"
+Cef begin
+#include "incore.h"
+Cef end
+C
+C     NPOS must be saved and therefore statically allocated.
+C
+#include "maxorb.h"
+      INTEGER, PARAMETER :: MAXTSK = MXSHEL*(MXSHEL+1)/2
+      INTEGER, SAVE      :: NPOS(0:MAXTSK+1)
+C
+      CALL QENTER('ERI_PARDR1')
+      IF (IPRINT .GT. 3) CALL TITLER('Output from ERI_PARDR1','*',103)
+C
+C     Take calculation time of each (I|J) pair?
+C
+      TIMING = FIRST .OR. NEWBAS
+C
+C--------------------------
+C     Make the index array.
+C--------------------------
+C
+      CALL HER_INDEKS(TIMING,INDEX,NINDEX,MXCLS2,NODTOT,
+     &            NTASK,NBATCH,NPOS,IPRINT)
+C
+Cef begin
+C  10.mai    INITX = .TRUE.
+Cef end
+C-----------------------
+C     Start calculation.
+C-----------------------
+C
+      CALL DOPAR(INDEX,MXCLS2,NBATCH,NSTAT,IPRINT)
+C
+C--------------------------------------
+C     Receive final results from nodes.
+C--------------------------------------
+C
+      CALL ERI_RVRES(FMAT,TMPMAT,MXCLS2,TIMES,IWHICH,CLSCPU,IPRINT)
+C
+C-----------------------------------------
+C     Sort the integral-calculation times.
+C-----------------------------------------
+C
+      IF (TIMING) CALL PARSRT(MXCLS2,NPOS,TMPMAT,TIMES,IPRINT)
+C
+C     NB! Array TMPMAT is only used as
+C         workspace for array SORTED.
+C
+      CALL QEXIT('ERI_PARDR1')
+      RETURN
+      END
+C     /* Deck dopar */
+Cef begin
+      SUBROUTINE DOPAR(INDEX,MXBTCH,NBATCH,NSTAT,IPRINT)
+C
+#include "implicit.h"
+#include "priunit.h"
+#include "mtags.h"
+#include "incore.h"
+C
+#if defined (VAR_MPI)
+      INCLUDE 'mpif.h'
+#endif
+C
+C
+      LOGICAL DONE, TDONE
+      DIMENSION INDEX(3,MXBTCH), NSTAT(NODTOT), IQUEUE(2,NODTOT,1000),
+     &     NQUEUE(NODTOT)
+C
+C Used from common blocks
+C
+C  INFPAR : NODTOT, NTASK, NCODE
+C
+#include "infpar.h"
+C
+C For MPE event logging
+C      evIDb1 = MPE_Log_get_event_number()
+C      evIDe1 = MPE_Log_get_event_number()
+C      call MPE_Describe_state(evIDb1,evIDe1,
+C     &     "DOPAR","magenta")
+C
+C Begin logging the event
+C      call MPE_Log_event(evIDb1,0,'')
+C
+      CALL QENTER('DOPAR')
+      IF (IPRINT .GT. 3) CALL TITLER('Output from DOPAR','*',103)
+C
+      CALL IZERO(NSTAT,NODTOT)
+C
+      CALL IZERO(IQUEUE,(2*1000*NODTOT))
+C
+      CALL IZERO(NQUEUE,NODTOT)
+
+C     Start loop over integrals (class1|class2).
+C
+      IQSIZE = 1000
+      IPLACE = 1
+      IPLACQ = 0
+      ITOTNT = 0
+      DONE   = .FALSE.
+      TDONE  = .FALSE.
+      IDONE = 0
+C
+      IF (AOSAVE) THEN
+         IF (IPRINT .GT. 3) THEN
+            write(lupri,*) 'DOPAR: sending AOSAVE information'
+            flush(lupri)
+         END IF
+C
+C         do ii=1,mxbtch
+C            write(lupri,*) 'i,INDEX(1..3,i):',ii,INDEX(1,ii),
+C     &           INDEX(2,ii),  INDEX(3,ii)
+C         end do
+         IF (NTASK .GT. 1) THEN
+            CALL QUIT('NTASK > 1 is not ported to AOSAVE = TRUE.')
+         END IF
+C
+ 110     CONTINUE
+C
+#if defined (VAR_MPI)
+         IWHO = -1
+         CALL MPIXRECV(NWHO,1,'INTEGER',IWHO,MTAG5)
+         CALL MPIXRECV(IPLAC2,1,'INTEGER',NWHO,MTAG51)
+C         CALL MPI_BARRIER(MPI_COMM_WORLD)
+         IF (IPLAC2 .NE. 0) THEN
+            CALL MPIXRECV(ISAVED,1,'INTEGER',NWHO,MTAG52)
+            INDEX(3,IPLAC2) = ISAVED
+         END IF
+C
+C     Send (I|J) batch
+C
+         IF (IPLACE .GT. NBATCH .AND. NQUEUE(NWHO) .EQ. 0) THEN
+            TDONE = .TRUE.
+            CALL MPIXSEND(TDONE,1,'LOGICAL',NWHO,MTAG6)
+            TDONE = .FALSE.
+            IDONE = IDONE + 1
+         ELSE
+            CALL MPIXSEND(DONE,1,'LOGICAL',NWHO,MTAG6)
+            IF (NQUEUE(NWHO) .GT. 0) THEN
+               CALL MPIXSEND(IQUEUE(1,NWHO,1),NTASK,
+     &              'INTEGER',NWHO,MTAG61)
+               CALL MPIXSEND(INDEX(3,IQUEUE(2,NWHO,1)),NTASK,'INTEGER',
+     &              NWHO,MTAG64)
+               CALL MPIXSEND(IQUEUE(2,NWHO,1),1,'INTEGER',
+     &              NWHO,MTAG62)
+               NQUEUE(NWHO) = NQUEUE(NWHO) - 1
+               CALL ICOPY((NQUEUE(NWHO)+1),IQUEUE(1,NWHO,2),(2*NODTOT),
+     &              IQUEUE(1,NWHO,1),(2*NODTOT))
+               CALL ICOPY((NQUEUE(NWHO)+1),IQUEUE(2,NWHO,2),(2*NODTOT),
+     &              IQUEUE(2,NWHO,1),(2*NODTOT))
+C
+               IPLACQ = IPLACQ - 1
+            ELSE IF ((INDEX(3,IPLACE) .EQ. 1
+     &          .AND. INDEX(2,IPLACE) .EQ. NWHO)
+     &          .OR. (INDEX(3,IPLACE) .EQ. 0)) THEN
+C
+               CALL MPIXSEND(INDEX(1,IPLACE),NTASK,'INTEGER',NWHO,
+     &              MTAG61)
+               CALL MPIXSEND(INDEX(3,IPLACE),NTASK,'INTEGER',NWHO,
+     &              MTAG64)
+C
+               INDEX(2,IPLACE) = NWHO
+C
+               CALL MPIXSEND(IPLACE,1,'INTEGER',NWHO,MTAG62)
+               IPLACE = IPLACE + NTASK
+            ELSE
+C
+               NQUEUE(INDEX(2,IPLACE)) = NQUEUE(INDEX(2,IPLACE)) + 1
+               IF (NQUEUE(INDEX(2,IPLACE)) .GT. IQSIZE) THEN
+                  CALL QUIT('The queue array IQUEUE must be enlarged.')
+               END IF
+               IQUEUE(1,INDEX(2,IPLACE),NQUEUE(INDEX(2,IPLACE))) =
+     &              INDEX(1,IPLACE)
+               IQUEUE(2,INDEX(2,IPLACE),NQUEUE(INDEX(2,IPLACE))) =
+     &              IPLACE
+               IPLACQ = IPLACQ + 1
+               IPLACE = IPLACE + NTASK
+               ITMP = 0
+C     Tell the unemployed node to try again
+               CALL MPIXSEND(ITMP,1,'INTEGER',NWHO,MTAG61)
+            END IF
+         END IF
+C
+#endif
+C
+C        Who-got-the-last-batch statistics
+C
+         NSTAT(NWHO) = NSTAT(NWHO) + 1
+C
+         IF (IPLACE .LE. NBATCH .OR. IPLACQ .GT. 0) THEN
+            GOTO 110
+         END IF
+C
+C     Instruct nodes to return the final results.
+C
+      DONE = .TRUE.
+C
+      DO 210 I = 1,(NODTOT-IDONE)
+C
+         IF (IPRINT .GT. 4) THEN
+            WRITE(LUPRI,'(5X,A,I5,A,I5)')
+     &         'DOPAR: Sending batch', I, ' to node ', NWHO
+            flush(lupri)
+         END IF
+C
+#if defined (VAR_MPI)
+         IWHO = -1
+         CALL MPIXRECV(NWHO,1,'INTEGER',IWHO,MTAG5)
+C
+C        Send (I|J) batch
+C
+         CALL MPIXRECV(IPLAC2,1,'INTEGER',NWHO,MTAG51)
+C
+         IF (IPLAC2 .NE. 0) THEN
+            CALL MPIXRECV(ISAVED,1,'INTEGER',NWHO,MTAG52)
+            INDEX(3,IPLAC2) = ISAVED
+         END IF
+         CALL MPIXSEND(DONE,1,'LOGICAL',NWHO,MTAG6)
+C         CALL MPI_BARRIER(MPI_COMM_WORLD,IERR)
+#endif
+ 210  CONTINUE
+C
+      IF (MXBTCH .GT. MXTSK) THEN
+          CALL QUIT('INDX_C in incore.h must be enlarged.')
+       END IF
+       CALL ICOPY((3*MXBTCH),INDEX(1,1),1,INDX_C(1,1),1)
+C      write(lupri,*) 'INDX_C'
+C      DO J=1,MXBTCH
+C         write(lupri,*) j,(INDX_C(I,J),i=1,3)
+C      END DO
+C
+
+C  ELSE below is for the compability to old code: AOSAVE = FALSE
+      ELSE
+         IF (IPRINT .GT. 3) THEN
+            write(lupri,*) 'DOPAR: sending information (AOSAVE false).'
+     &         //' NBATCH =',NBATCH
+            flush(lupri)
+         END IF
+C
+         DO 100 I = 1,NBATCH
+C
+#if defined (VAR_MPI)
+         IWHO = -1
+         CALL MPIXRECV(NWHO,1,'INTEGER',IWHO,MTAG5)
+C
+C        Send (I|J) batch
+C
+         CALL MPIXSEND(DONE,1,'LOGICAL',NWHO,MTAG6)
+         CALL MPIXSEND(INDEX(MOD(IPLACE-1,3)+1,INT((IPLACE-1)/3)+1),
+     &        NTASK,'INTEGER',NWHO,MTAG6)
+#endif
+C
+C        Who-got-the-last-batch statistics
+C
+         NSTAT(NWHO) = NSTAT(NWHO) + 1
+C
+         IF (IPRINT .GT. 4) THEN
+            WRITE(LUPRI,'(5X,A,I5,A,I5)')
+     &          'Sending batch', I, ' to node', NWHO
+            flush(lupri)
+         END IF
+C
+         IPLACE = IPLACE + NTASK
+C
+  100 CONTINUE
+C
+C     Instruct nodes to return the final results.
+C
+      DONE = .TRUE.
+C
+      DO 200 I = 1,NODTOT
+C
+#if defined (VAR_MPI)
+         IWHO = -1
+         CALL MPIXRECV(NWHO,1,'INTEGER',IWHO,MTAG5)
+         CALL MPIXSEND(DONE,1,'LOGICAL',NWHO,MTAG6)
+#endif
+  200 CONTINUE
+C  ENDIF below ends if-test on AOSAVE
+      END IF
+C
+C End logging the event
+C     call MPE_Log_event(evIDe1,0,'')
+      CALL QEXIT('DOPAR')
+      RETURN
+      END
+Cef end
+C  /* Deck eri_rvres */
+      SUBROUTINE ERI_RVRES(FMAT,TMPMAT,MXCLS2,TIMES,IWHICH,CLSCPU,
+     &                     IPRINT)
+C
+#include "implicit.h"
+#include "mtags.h"
+#include "priunit.h"
+      PARAMETER (D0=0.0D0,D1 = 1.0D0)
+      LOGICAL NOTMEM
+      DIMENSION FMAT(N2BASX), TMPMAT(N2BASX), TIMES(MXCLS2),
+     &          IWHICH(MXCLS2), CLSCPU(MXCLS2)
+C
+C Used from common blocks
+C
+C INFPAR : NODTOT
+C INFORB : N2BASX
+C ERIMEM : *
+C
+#include "infpar.h"
+#include "inforb.h"
+#include "erimem.h"
+C
+      IF (IPRINT .GT. 3) CALL TITLER('Output from ERI_RVRES','*',103)
+C
+C     Clean matrices.
+C
+      CALL DZERO(FMAT,N2BASX)
+      CALL DZERO(TIMES,MXCLS2)
+C
+      IJSTOT = 0
+      MAXADD = 0
+      NOTMEM = .FALSE.
+C
+      DO 100 I = 1,NODTOT
+#if defined (VAR_MPI)
+         NWHO = -1
+         CALL MPIXRECV(MEMOK,1,'LOGICAL',NWHO,MTAG7)
+         IF (MEMOK) THEN
+            CALL DZERO(TMPMAT,N2BASX)
+            CALL MPIXRECV(TMPMAT,N2BASX,'DOUBLE',NWHO,MTAG7)
+            CALL MPIXRECV(IJS,1,'INTEGER',NWHO,MTAG7)
+            IF (TIMING) THEN
+               CALL MPIXRECV(IWHICH,IJS,'INTEGER',NWHO,MTAG7)
+               CALL MPIXRECV(CLSCPU,IJS,'DOUBLE' ,NWHO,MTAG7)
+               DO 200, J=1,IJS
+                  TIMES(IWHICH(J)) = CLSCPU(J)
+ 200           CONTINUE
+            END IF
+            CALL DAXPY(N2BASX,D1,TMPMAT,1,FMAT,1)
+            IJSTOT = IJSTOT + IJS
+         ELSE
+            CALL MPIXRECV(MEMADD,3,'INTEGER',NWHO,MTAG7)
+            CALL MPIXRECV(LWORK ,1,'INTEGER',NWHO,MTAG7)
+            IF (MEMADD .GT. MAXADD) THEN
+               IABMAX = MODAB
+               ICDMAX = MODCD
+               IWORK  = LWORK
+               MAXADD = MEMADD
+            END IF
+            NOTMEM = .TRUE.
+         END IF
+#endif
+ 100  CONTINUE
+C
+      IF (NOTMEM) THEN
+         WRITE (LUPRI,'(//,1X,A,3(/,1X,A,I10))')
+     &      ' Not enough memory for this parallel run of ERIFCK.',
+     &      ' Available memory in ERIFCK:',IWORK,
+     &      ' Required memory for ERIFCK:',IWORK + MAXADD,
+     &      ' Increase memory (LWORK) by:',MAXADD
+         WRITE (LUPRI,'(/,1X,A,2I5)')
+     &      ' Memory requirements largest for OD classes :',
+     &        IABMAX,ICDMAX
+         CALL QUIT('Insufficient memory in ERIFCK.')
+      ELSE
+         IF (IPRINT.GT.5) THEN
+            CALL HEADER('Fock matrices in ERI_RVRES',-1)
+            CALL OUTPUT(FMAT,1,NBAST,1,NBAST,NBAST,NBAST,1,LUPRI)
+            CALL FLSHFO(LUPRI)
+         END IF
+      END IF
+C
+      IF (IJSTOT .NE. MXCLS2) THEN
+        WRITE(LUPRI,'(/5X,A)') 'Error in parallel calculation!'
+        WRITE(LUPRI,'(5X,A,I5)') 'Number of tasks to calculate  : ',
+     &       MXCLS2
+        WRITE(LUPRI,'(5X,A,I5)') 'Number of tasks    calculated : ',
+     &       IJSTOT
+        CALL QUIT('Inconsistence in ERI_RVRES -> MXCLS2 .NE. IJSTOT')
+      ENDIF
+C
+      RETURN
+      END
+C  /* Deck eri_nodstr */
+      SUBROUTINE ERI_NODSTR(WORK,LWORK,IPRINT)
+C
+#include "implicit.h"
+#include "priunit.h"
+#include "iratdef.h"
+#include "aovec.h"
+#include "maxorb.h"
+C
+      PARAMETER (MXDMAT = 100)
+      DIMENSION WORK(LWORK), ISYMDM(MXDMAT), IFCTYP(MXDMAT)
+C
+C Used from common blocks
+C
+C INFPAR : SLAVE
+C INFORB : N2BASX
+C
+#include "infpar.h"
+#include "inforb.h"
+#include "veclen.h"
+C
+#include "memint.h"
+C
+      CALL QENTER('ERI_NODSTR')
+C
+      IF (IPRINT .GT. 3) CALL TITLER('Output from ERI_NODSTR','*',103)
+C
+C     Start timing
+C
+      CALL GETTIM(CPU1,WALL1)
+C
+C     Tell integral section this is a slave in a parallel run.
+C
+      SLAVE = .TRUE.
+C
+C     Receive initialization from Master
+C
+      NPAO = MXSHEL*MXAOVC
+      CALL MEMGET('INTE',KJSTRS,NPAO*2,WORK,KFREE,LFREE)
+      CALL MEMGET('INTE',KNPRIM,NPAO*2,WORK,KFREE,LFREE)
+      CALL MEMGET('INTE',KNCONT,NPAO*2,WORK,KFREE,LFREE)
+      CALL MEMGET('INTE',KIORBS,NPAO  ,WORK,KFREE,LFREE)
+      CALL MEMGET('INTE',KJORBS,NPAO  ,WORK,KFREE,LFREE)
+      CALL MEMGET('INTE',KKORBS,NPAO  ,WORK,KFREE,LFREE)
+      CALL ERI_RVINIT(WORK(KJSTRS),WORK(KNPRIM),WORK(KNCONT),
+     &                WORK(KIORBS),WORK(KJORBS),WORK(KKORBS),
+     &                ISYMDM,IFCTYP,WORK,LWORK,IPRINT)
+C
+C     Allocate workspace
+C
+      NDMAT  = 1
+#if defined (VAR_VECTOR)
+      ICHUNK = MAX(IVECLN/NDMAT,1)
+#endif
+C
+      KDMAT  = 1
+      KFMAT  = KDMAT  + N2BASX
+      KCCFBT = KFMAT  + N2BASX
+      KINDXB = KCCFBT + MXPRIM*MXCONT
+      KFCKPT = KINDXB + (MXSHEL*MXCONT*8 - 1)/IRAT + 1
+#if defined (VAR_VECTOR)
+      KLAST  = KFCKPT + ICHUNK*NDMAT*(NBASE + NODD)*NBASE
+#else
+      KLAST  = KFCKPT
+#endif
+      IF (KLAST .GT. LWORK) CALL STOPIT('ERI_NODSTR',' ',KLAST,LWORK)
+      LWRK   = LWORK - KLAST
+C
+C     Zero Fock-matrix
+C
+      CALL DZERO(WORK(KFMAT),N2BASX)
+C
+      CALL ERIFCK(WORK(KFMAT),WORK(KDMAT),NDMAT,ISYMDM,IFCTYP,IPRINT,
+     &            WORK(KCCFBT),WORK(KINDXB),WORK(KFCKPT),
+     &            WORK(KLAST),LWRK)
+C
+C     Send overall timings if requested.
+C
+      IF (IPRPAR .GT. 0) CALL SDTIM(CPU1,WALL1,IPRINT)
+C
+      CALL QEXIT('ERI_NODSTR')
+      RETURN
+      END
+C  /* Deck eri_rvinit */
+      SUBROUTINE ERI_RVINIT(JSTRSH,NPRIMS,NCONTS,IORBSH,JORBSH,KORBSH,
+     &                      ISYMDM,IFCTYP,WORK,LWORK,IPRINT)
+C
+#include "implicit.h"
+#include "priunit.h"
+#include "mxcent.h"
+#include "mtags.h"
+C
+      LOGICAL FIRST, TSTINP
+      DIMENSION JSTRSH(*), NPRIMS(*), NCONTS(*), IORBSH(*),
+     &          JORBSH(*), KORBSH(*), ISYMDM(*), IFCTYP(*),
+     &          WORK(LWORK)
+C
+C Used from common blocks
+C
+C MXCENT : MXCENT (for MOLINP)
+C GNRINF : NEWBAS, NEWGEO,, RELCAL
+C MOLINP : NMLINE
+C MOLINC : MLINE()
+C INFORB : *
+C INFPAR : *
+C CBIERI : *
+C
+#include "gnrinf.h"
+#include "molinp.h"
+#include "infpar.h"
+#include "inforb.h"
+#include "r12int.h"
+#include "cbieri.h"
+#include "cbirea.h"
+C
+      IF (IPRINT .GT. 3) CALL TITLER('Output from ERI_RVINIT','*',103)
+C
+#if defined (VAR_MPI)
+C
+C     Master tells nodes whether to read new input information.
+C
+      CALL MPIXBCAST(FIRST ,1,'LOGICAL',MASTER)
+      CALL MPIXBCAST(NEWGEO,1,'LOGICAL',MASTER)
+      CALL MPIXBCAST(NEWBAS,1,'LOGICAL',MASTER)
+C
+      TIMING = FIRST .OR. NEWBAS
+C
+C     Receive /MOLINC/,/MOLINP/, /INFORB/, /INFPAR/ and /CBIERI/
+C
+      IF (TIMING .OR. NEWGEO) THEN
+         IF (IPRINT .GT. 3) WRITE(LUPRI,'(/1X,A,/,1X,A,3L3)')
+     &        ' Receiving new orbital inf.',
+     &        ' FIRST,NEWBAS,NEWGEO :',FIRST,NEWBAS,NEWGEO
+C   /molinp/
+         CALL MPIXBCAST(NMLINE,1,'INTEGER',MASTER)
+C   /molinc/
+         CALL MPIXBCAST(MLINE,len_MLINE*NMLINE,'STRING',MASTER)
+C   /inforb/
+         CALL MPIXBCAST(MULD2H,NINFI,'INTEGER',MASTER)
+C   /infpar/
+         CALL MPIXBCAST(NODTOT,NPARI,'INTEGER',MASTER)
+C   /cbieri/
+         CALL MPIXBCAST(NDMAT ,NCBII,'INTEGER',MASTER)
+         CALL MPIXBCAST(RUNERI,NCBIL,'LOGICAL',MASTER)
+C   /cbirea/
+         CALL MPIXBCAST(LCMMAX,1,'INTEGER',MASTER)
+         CALL MPIXBCAST(NCMSTR,1,'INTEGER',MASTER)
+         CALL MPIXBCAST(NCMEND,1,'INTEGER',MASTER)
+         CALL MPIXBCAST(LCNTNUUM,1,'LOGICAL',MASTER)
+C  comr12
+         CALL MPIXBCAST(R12INT,NR12L,'LOGICAL',MASTER)
+         CALL MPIXBCAST(LMULBS,1,'LOGICAL',MASTER)
+         CALL MPIXBCAST(INTGAC,NR12I,'INTEGER',MASTER)
+      END IF
+      CALL MPIXBCAST(ISYMDM,NDMAT,'INTEGER',MASTER)
+      CALL MPIXBCAST(IFCTYP,NDMAT,'INTEGER',MASTER)
+#else
+!     to remove compiler warnings for sequential builds
+      FIRST = .TRUE.
+#endif
+C
+C     Set hermit
+C
+      IF (NEWGEO) RDINPC = .FALSE.
+C
+C     Since REAINI is not initialized outside of SETHER, make sure slaves
+C     initialize it properly
+C
+      IF (FIRST) THEN
+          RELCAL = .FALSE.
+          TSTINP = .FALSE.
+         CALL REAINI(0,RELCAL,TSTINP)
+      END IF
+C
+      CALL SETHER(0,NEWGEO,WORK,LWORK)
+C
+C     Set common-block BLOCKS
+C
+      CALL PAOVEC(JSTRSH,NPRIMS,NCONTS,IORBSH,JORBSH,KORBSH,0,.FALSE.,0)
+C
+C     Get DMAT
+C
+      CALL DZERO(WORK,N2BASX)
+C
+#if defined (VAR_MPI)
+      CALL MPIXBCAST(WORK,N2BASX,'DOUBLE',MASTER)
+#endif
+C
+      RETURN
+      END
+C  /* Deck eri_noddrv */
+      SUBROUTINE ERI_NODDRV(IODCL1,IODCL2,
+     &                      IODBC1,IODBC2,RODBC1,RODBC2,
+     &                      IODPP1,IODPP2,RODPP1,RODPP2,
+     &                      FMAT,DMAT,NDMT,IFCTYP,D2MAT,ID2MAT,
+     &                      NACTAB,NACTCD,SCRNAB,SCRNCD,
+     &                      INDHER,INDHSQ,IODDHR,
+     &                      LMNPWR,LMNSYM,IPNTUV,
+     &                      BUF,IBUF,
+     &                      CLSCPU,IWHICH,IJS,MXCLS2,
+     &                      CCFBT,INDXBT,NCOUNT,CSQ,WORK,LWORK,IPRINT)
+#include "implicit.h"
+#include "priunit.h"
+#include "iratdef.h"
+#include "mxcent.h"
+#include "maxorb.h"
+#include "aovec.h"
+#include "maxaqn.h"
+#include "eribuf.h"
+#include "dummy.h"
+#include "mtags.h"
+#include "cbieri.h"
+#include "erithr.h"
+#include "odclss.h"
+#include "ccom.h"
+#include "aobtch.h"
+#include "doxyz.h"
+#include "ericom.h"
+#include "erimem.h"
+#include "erista.h"
+#include "hertop.h"
+#include "symmet.h"
+C
+C Used from common blocks
+C
+C INFPAR: MYNUM, NTASK, TIMING
+C
+#include "infpar.h"
+      LOGICAL DONE
+      DIMENSION IODCL1(NODCL1,NITCL), IODCL2(NODCL2,NITCL),
+     &          IODBC1(NODBC1,NITBC), IODBC2(NODBC2,NITBC),
+     &          RODBC1(NODBC1,NRTBC), RODBC2(NODBC2,NRTBC),
+     &          IODPP1(NODPP1,NITPP), IODPP2(NODPP2,NITPP),
+     &          RODPP1(NODPP1,NRTPP), RODPP2(NODPP2,NRTPP),
+     &          NACTAB(NODCL1), NACTCD(NODCL2),
+     &          SCRNAB(NODBC1), SCRNCD(NODBC2),
+     &          INDHER(0:JTOP,0:JTOP,0:JTOP),
+     &          INDHSQ(NRTOP), IODDHR(NRTOP,0:7),
+     &          LMNPWR(KCKMAX,NHKMAX,3), LMNSYM(KCKMAX,NHKMAX,2,0:7),
+     &          IPNTUV(KC2MAX,2,2),
+     &          FMAT(*), DMAT(*), IFCTYP(NDMT), D2MAT(*), ID2MAT(*),
+     &          BUF(LBUF,NBUFS), IBUF(LBUF,NIBUF,NBUFS),
+     &          CCFBT(*), INDXBT(*),
+     &          CLSCPU(MXCLS2), IWHICH(MXCLS2), IJS(NTASK),
+     &          NCOUNT(*), CSQ(NCSQ1,NCSQ2), WORK(LWORK)
+
+C
+      CALL QENTER('ERI_NODDRV')
+C
+      IF (IPRINT .GT. 3) CALL TITLER('Output from ERI_NODDRV','*',103)
+C
+C     Send NODCL1 and NTASK to master.
+C
+      IF (MYNUM .EQ. 1) THEN
+         CALL ERI_SDCLS(NODCL1,IPRINT)
+      END IF
+C
+      IF (IPRINT .GT. 5) THEN
+         CALL HEADER('Output from subroutine ODCDR1',-1)
+         WRITE (LUPRI,'(2X,A,2I5)') ' NODCL1, NODCL2 ', NODCL1, NODCL2
+         WRITE (LUPRI,'(2X,A,2I5)') ' NODPP1, NODPP2 ', NODPP1, NODPP2
+         WRITE (LUPRI,'(2X,A,2L5)') ' ODTRI1, ODTRI2 ', ODTRI1, ODTRI2
+         IF (IPRINT .GT. 8) THEN
+            CALL HEADER('IODCL1 in ODCDR1',1)
+            DO 100 I = 1, NODCL1
+               WRITE (LUPRI,'(5X,I5,5X,14I5)') I,(IODCL1(I,J),J=1,NITCL)
+  100       CONTINUE
+            CALL HEADER('IODCL2 in ODCDR1',1)
+            DO 110 I = 1, NODCL2
+               WRITE (LUPRI,'(5X,I5,5X,14I5)') I,(IODCL2(I,J),J=1,NITCL)
+  110       CONTINUE
+            CALL HEADER('IODBC1 in ODCDR1',1)
+            DO 120 I = 1, NODBC1
+               WRITE (LUPRI,'(5X,I5,5X,7I5)') I,(IODBC1(I,J),J=1,NITBC)
+  120       CONTINUE
+            CALL HEADER('IODBC2 in ODCDR1',1)
+            DO 130 I = 1, NODBC2
+               WRITE (LUPRI,'(5X,I5,5X,7I5)') I,(IODBC2(I,J),J=1,NITBC)
+  130       CONTINUE
+            CALL HEADER('RODBC1 in ODCDR1',-1)
+            CALL OUTPUT(RODBC1,1,NODBC1,1,NRTBC,NODBC1,NRTBC,1,LUPRI)
+            CALL HEADER('RODBC2 in ODCDR1',-1)
+            CALL OUTPUT(RODBC2,1,NODBC2,1,NRTBC,NODBC2,NRTBC,1,LUPRI)
+            CALL HEADER('RODPP1 in ODCDR1',-1)
+            CALL OUTPUT(RODPP1,1,NODPP1,1,NRTPP,NODPP1,NRTPP,1,LUPRI)
+            CALL HEADER('RODPP2 in ODCDR1',-1)
+            CALL OUTPUT(RODPP2,1,NODPP2,1,NRTPP,NODPP2,NRTPP,1,LUPRI)
+         END IF
+      END IF
+C
+C     COMMON /DOXYZ/
+C
+      DOX = .TRUE.
+      DOY = .TRUE.
+      DOZ = .TRUE.
+C
+      FIRST = .TRUE.
+      LAST  = .FALSE.
+C
+      NPPA  = 0
+      NCPA  = 0
+      NPCA  = 0
+      NCCA  = 0
+      NODPQ = 0
+C
+      NTPAS = 0
+      NPPXA = 0
+      NPCXA = 0
+      NCPXA = 0
+      NCCXA = 0
+      NPPSA = 0
+      NPCSA = 0
+      NCPSA = 0
+      NCCSA = 0
+C
+      NPPX1 = 1000000
+      NPCX1 = 1000000
+      NCPX1 = 1000000
+      NCCX1 = 1000000
+      NPPS1 = 1000000
+      NPCS1 = 1000000
+      NCPS1 = 1000000
+      NCCS1 = 1000000
+C
+      NPPX2 = 0
+      NPCX2 = 0
+      NCPX2 = 0
+      NCCX2 = 0
+      NPPS2 = 0
+      NPCS2 = 0
+      NCPS2 = 0
+      NCCS2 = 0
+C
+      IPASSA = 0
+      IPASS1 = 1000
+      IPASS2 = 0
+      IPASSN = 0
+C
+C     Arrays for Hermite integrals
+C     ============================
+C
+      CALL HERPRP(INDHER,INDHSQ,IODDHR,IPRINT)
+      CALL LMNPRP(LMNPWR,LMNSYM,IPRINT)
+C
+C     Active/inactive batches
+C     =======================
+C
+      IELCTR = 1
+      CALL ERIACT(NACTAB,SCRNAB,RODBC1,IODBC1,NODBC1,IODCL1,
+     &            NODCL1,ODTRI1,IELCTR,IPRINT)
+C
+      IELCTR = 2
+      CALL ERIACT(NACTCD,SCRNCD,RODBC2,IODBC2,NODBC2,IODCL2,
+     &            NODCL2,ODTRI2,IELCTR,IPRINT)
+C
+      IPRKEP = IPRINT
+C
+      IJSTOT = 0
+      CALL IZERO(IWHICH,MXCLS2)
+      CALL DZERO(CLSCPU,MXCLS2)
+C
+  200 CONTINUE
+C
+C     Send ID number and ask for something to do.
+C
+#if defined (VAR_MPI)
+      CALL MPIXSEND(MYNUM,1,'INTEGER',MASTER,MTAG5)
+C
+C     Receive IJ labels for NTASK new (class|class) integrals
+C
+      CALL IZERO(IJS,NTASK)
+C
+      CALL MPIXRECV(DONE,1,'LOGICAL',MASTER,MTAG6)
+      IF (DONE) GOTO 500
+      CALL MPIXRECV(IJS,NTASK,'INTEGER',MASTER,MTAG6)
+#endif
+      IF (IPRINT .GT. 4) THEN
+         WRITE(LUPRI,'(5X,A,I5,A)')
+     &      'Receiving batch',IJSTOT,'from master'
+      END IF
+C
+      DO 300, K = 1,NTASK
+C
+      IJCLS = IJS(K)
+C
+      IF (IJCLS .EQ. 0) THEN
+         IJSTOT = IJSTOT + K - 1
+         GOTO 200
+      ELSE
+         CALL UNPKIJ(IJCLS,IODAB,IODCD)
+      END IF
+C
+      IF (TIMING) CPU1IJ = SECOND()
+C
+C     Here starts the integral calculation
+C
+      IF (NACTAB(IODAB) .GT. 0) THEN
+         NODSAB = NACTAB(IODAB)
+C
+         NODTAB = IODCL1(IODAB, 1)
+         KODSAB = IODCL1(IODAB, 2)
+         SCRMAB = SCRNAB(KODSAB+IDAMAX(NODTAB,SCRNAB(KODSAB),1)-1)
+C
+         NHKTA  = IODCL1(IODAB, 3)
+         NHKTB  = IODCL1(IODAB, 4)
+         KHKTA  = IODCL1(IODAB, 5)
+         KHKTB  = IODCL1(IODAB, 6)
+         KCKTA  = IODCL1(IODAB, 7)
+         KCKTB  = IODCL1(IODAB, 8)
+         ISTBLA = IODCL1(IODAB, 9)
+         ISTBLB = IODCL1(IODAB,10)
+         NPRFAB = IODCL1(IODAB,11)
+         NCTFAB = IODCL1(IODAB,12)
+         NCNTAB = IODCL1(IODAB,13)
+         NGTOAB = IODCL1(IODAB,14)
+C
+         MAXCD = NODCL2
+         IF (ODTR12) MAXCD = IODAB
+C
+         IF (NACTCD(IODCD) .GT. 0) THEN
+            NODSCD = NACTCD(IODCD)
+C
+            NODTCD = IODCL2(IODCD, 1)
+            KODSCD = IODCL2(IODCD, 2)
+            SCRMCD = SCRNCD(KODSCD+IDAMAX(NODTCD,SCRNCD(KODSCD),1)-1)
+C
+         IF (SCRMAB*SCRMCD .GT. THRSH) THEN
+C
+            IF (EXTPRI .AND. IODAB.EQ.IPROD1 .AND. IODCD.EQ.IPROD2) THEN
+               IPRINT = 1000
+            ELSE
+               IPRINT = IPRKEP
+            END IF
+C
+            NHKTC  = IODCL2(IODCD, 3)
+            NHKTD  = IODCL2(IODCD, 4)
+            KHKTC  = IODCL2(IODCD, 5)
+            KHKTD  = IODCL2(IODCD, 6)
+            KCKTC  = IODCL2(IODCD, 7)
+            KCKTD  = IODCL2(IODCD, 8)
+            ISTBLC = IODCL2(IODCD, 9)
+            ISTBLD = IODCL2(IODCD,10)
+            NPRFCD = IODCL2(IODCD,11)
+            NCTFCD = IODCL2(IODCD,12)
+            NCNTCD = IODCL2(IODCD,13)
+            NGTOCD = IODCL2(IODCD,14)
+C
+            NODSPQ = NODSAB*NODSCD
+            NPRFPQ = NPRFAB*NPRFCD
+            NCTFPQ = NCTFAB*NCTFCD
+C
+C           Statistics
+C
+            NODPQ  = NODPQ + 1
+            NPPI   = NODSPQ*NPRFPQ
+            NCPI   = NODSPQ*NCTFAB*NPRFCD
+            NPCI   = NODSPQ*NPRFAB*NCTFCD
+            NCCI   = NODSPQ*NCTFAB*NCTFCD
+            NPPA   = NPPA  + NPPI
+            NCPA   = NCPA  + NCPI
+            NPCA   = NPCA  + NPCI
+            NCCA   = NCCA  + NCCI
+C
+            JMAXA  = NHKTA - 1
+            JMAXB  = NHKTB - 1
+            JMAXC  = NHKTC - 1
+            JMAXD  = NHKTD - 1
+            JMAXAB = JMAXA + JMAXB + MAXDER
+            JMAXCD = JMAXC + JMAXD + MAXDER
+            JMAX   = JMAXA + JMAXB + JMAXC + JMAXD + MAXDER
+C
+            NTUVAB = (JMAXAB + 1)*(JMAXAB + 2)*(JMAXAB + 3)/6
+            NTUVCD = (JMAXCD + 1)*(JMAXCD + 2)*(JMAXCD + 3)/6
+            NTUV   = (JMAX   + 1)*(JMAX   + 2)*(JMAX   + 3)/6
+C
+            SPHRA  = KHKTA .NE. KCKTA
+            SPHRB  = KHKTB .NE. KCKTB
+            SPHRC  = KHKTC .NE. KCKTC
+            SPHRD  = KHKTD .NE. KCKTD
+C
+            SPHRAB = SPHRA .OR. SPHRB
+            SPHRCD = SPHRC .OR. SPHRD
+C
+            ISTBLR = IOR(ISTBLA,ISTBLB)
+            ISTBLS = IOR(ISTBLC,ISTBLD)
+            ISTBLT = IOR(IAND(ISTBLA,ISTBLB),IAND(ISTBLC,ISTBLD))
+C
+            MLTPA = MULT(ISTBLA)
+            MLTPB = MULT(ISTBLB)
+            MLTPC = MULT(ISTBLC)
+            MLTPD = MULT(ISTBLD)
+C
+C
+            MLTPR = MULT(ISTBLR)
+            MLTPS = MULT(ISTBLS)
+            MLTPT = MULT(ISTBLT)
+            MLTPX = MLTPR*MLTPS*MLTPT
+C
+            TKMPAB = NCNTAB.EQ.1 .AND. KHKTA.EQ.KHKTB .AND..NOT.DODIST
+            TKMPCD = NCNTCD.EQ.1 .AND. KHKTC.EQ.KHKTD .AND..NOT.DODIST
+            TCMPAB = TKMPAB .AND. .NOT.SPHRAB
+            TCMPCD = TKMPCD .AND. .NOT.SPHRCD
+C
+            DIAGAB = NGTOAB .EQ. 1 .AND. ODTRI1
+            DIAGCD = NGTOCD .EQ. 1 .AND. ODTRI2
+C
+            KHKTAB = KHKTA*KHKTB
+            KHKTCD = KHKTC*KHKTD
+            KCKTAB = KCKTA*KCKTB
+            KCKTCD = KCKTC*KCKTD
+            IF (TKMPAB) KHKTAB = KHKTA*(KHKTA + 1)/2
+            IF (TKMPCD) KHKTCD = KHKTC*(KHKTC + 1)/2
+            IF (TCMPAB) KCKTAB = KCKTA*(KCKTA + 1)/2
+            IF (TCMPCD) KCKTCD = KCKTC*(KCKTC + 1)/2
+C
+C           Memory requirements
+C
+            CALL MEMPQB(MEMBCH,NALLOI,IPRINT)
+            IF (MEMBCH .GT. LWORK) THEN
+               IF (IPRINT .GT. 5) THEN
+                  WRITE (LUPRI,'(/,1X,A,2I5,2(/1X,A,I10))')
+     &              ' Not enough memory for one PQ batch for'//
+     &              ' OD classes: ',IODAB, IODCD,
+     &              ' Available memory in ODCPAR:',LWORK,
+     &              ' Required memory for ODCPAR:',MEMBCH
+               END IF
+               MEMOK = .FALSE.
+               NEEDMR = MEMBCH - LWORK
+               IF (NEEDMR .GT. MEMADD) THEN
+                  MEMADD = NEEDMR
+                  MODAB  = IODAB
+                  MODCD  = IODCD
+               END IF
+            ELSE IF (MEMOK) THEN
+               IJ = 0
+               DO 400 I = KODSAB, KODSAB + NODTAB - 1
+                  MAXJ = KODSCD + NODTCD - 1
+                  IF (ODTR12 .AND. IODAB.EQ.IODCD) MAXJ = I
+                  DO 410 J = KODSCD, MAXJ
+                     IF (SCRNAB(I)*SCRNCD(J).GT.THRSH) IJ = IJ + 1
+  410             CONTINUE
+  400          CONTINUE
+               MAXBCH = MIN(IJ,(IRAT*LWORK-(IRAT-1)*NALLOI)/MEMBCH)
+            END IF
+C
+C           Print level zero for parallel calculations
+C
+            IF (IPRINT .GT. 10) THEN
+               CALL TITLER('New pair of OD classes','*',103)
+            END IF
+            IF (IPRINT .GT. 5) THEN
+               WRITE (LUPRI,'(1X,A,2I5)')
+     &            ' New OD classes:        ',IODAB,IODCD
+            END IF
+            IF (IPRINT .GT. 10) THEN
+               WRITE (LUPRI,'(1X,A,4I5)')
+     &            ' Angular momenta (NHKT):',NHKTA,NHKTB,NHKTC,NHKTD
+               WRITE (LUPRI,'(1X,A,3I5)')
+     &            ' Number of active OD batches:  ',NODSAB,NODSCD,NODSPQ
+               WRITE (LUPRI,'(1X,A,2I5)')
+     &            ' NODTAB, NODTCD:        ',NODTAB,NODTCD
+               WRITE (LUPRI,'(1X,A,2I5)')
+     &            ' KODSAB, KODSCD:        ',KODSAB,KODSCD
+               WRITE (LUPRI,'(1X,A,3I5)')
+     &            ' NPRFAB, NPRFCD:        ',NPRFAB,NPRFCD,NPRFPQ
+               WRITE (LUPRI,'(1X,A,3I5)')
+     &            ' NCTFAB, NCTFCD:        ',NCTFAB,NCTFCD,NCTFPQ
+               WRITE (LUPRI,'(1X,A,4I5)')
+     &            ' NPP,NCPI,NPCI,NCCI:    ',NPPI,NCPI,NPCI,NCCI
+               WRITE (LUPRI,'(1X,A,2I5)')
+     &            ' NCNTAB, NCNTCD:        ',NCNTAB,NCNTCD
+               WRITE (LUPRI,'(1X,A,2I5)')
+     &            ' NGTOAB, NGTOCD:        ',NGTOAB,NGTOCD
+               WRITE (LUPRI,'(1X,A,2L5)')
+     &            ' TKMPAB, TKMPCD:        ',TKMPAB,TKMPCD
+               WRITE (LUPRI,'(1X,A,2I5)')
+     &            ' MEMBCH, MAXBCH:        ',MEMBCH,MAXBCH
+            END IF
+C
+            IF (MEMOK) THEN
+C
+C              Allocate ODCPAR
+C
+               NITPQ  = 6
+               KPNTCR = 1
+               KPNTPP = KPNTCR + (4*MAXBCH - 1)/IRAT + 1
+               KLAST  = KPNTPP + (2*MAXBCH - 1)/IRAT + 1
+               IF (KLAST.GT.LWORK) CALL STOPIT('ODCDR1',' ',KLAST,LWORK)
+               LWRK  = LWORK - KLAST + 1
+               CALL ODCPAR(IODBC1,IODBC2,
+     &                     IODPP1,IODPP2,RODPP1,RODPP2,
+     &                     SCRNAB,SCRNCD,
+     &                     INDHER,INDHSQ,IODDHR,
+     &                     LMNPWR,LMNSYM,IPNTUV,
+     &                     WORK(KPNTCR),WORK(KPNTPP),
+     &                     FMAT,DMAT,NDMT,IFCTYP,D2MAT,ID2MAT,BUF,IBUF,
+     &                     CCFBT,INDXBT,NCOUNT,CSQ,WORK(KLAST),
+     &                     LWRK,IPRINT)
+            END IF
+         END IF
+         END IF
+      END IF
+C
+      IF (TIMING) THEN
+         CPU2IJ = SECOND()
+         CPUIJ  = CPU2IJ - CPU1IJ
+         IPLACE = IJSTOT + K
+C
+         IWHICH(IPLACE) = IJCLS
+         CLSCPU(IPLACE) = CPUIJ
+      END IF
+C
+ 300  CONTINUE
+C
+      IJSTOT = IJSTOT + NTASK
+      GOTO 200
+C
+ 500  CONTINUE
+C
+      CALL ERI_SDRES(DMAT,FMAT,NBASE,CLSCPU,IWHICH,IJSTOT,LWORK,
+     &               IPRINT)
+C
+      IPRINT = IPRKEP
+C
+      CALL QEXIT('ERI_NODDRV')
+      RETURN
+      END
+C  /* Deck eri_sdcls */
+      SUBROUTINE ERI_SDCLS(NODCLS,IPRINT)
+C
+#include "implicit.h"
+#include "mtags.h"
+C
+C Used from common blocks
+C
+C  INFPAR: MASTER
+C
+#include "infpar.h"
+C
+      IF (IPRINT .GT. 3) CALL TITLER('Output from ERI_SDCLS','*',103)
+C
+#if defined (VAR_MPI)
+      CALL MPIXSEND(NODCLS,1,'INTEGER',MASTER,MTAG4)
+      CALL MPIXSEND(NTASK ,1,'INTEGER',MASTER,MTAG4)
+#endif
+C
+      RETURN
+      END
+C  /* Deck sdres */
+      SUBROUTINE ERI_SDRES(DMAT,FMAT,NBASE,CLSCPU,IWHICH,IJSTOT,
+     &                     LWORK,IPRINT)
+C
+#include "implicit.h"
+#include "priunit.h"
+#include "mtags.h"
+C
+      DIMENSION DMAT(*), FMAT(*), CLSCPU(IJSTOT), IWHICH(IJSTOT)
+C
+C Used from common blocks
+C
+C  INFPAR : NCODE, MASTER, MYNUM, TIMING
+C  ERIMEM : *
+C  CBIERI : NDMAT
+C
+#include "infpar.h"
+#include "erimem.h"
+#include "cbieri.h"
+C
+      IF (IPRINT .GT. 3) CALL TITLER('Output from ERI_SDRES','*',103)
+C
+      IF (MEMOK) THEN
+         IF (IPRINT.GT.5) THEN
+            CALL HEADER('Density and Fock matrices in ERI_SDRES',-1)
+            KSTR = 1
+            DO 300 I = 1, NDMAT
+               WRITE (LUPRI,'(//,1X,A,I3)') ' Density matrix No.',I
+               CALL OUTPUT(DMAT(KSTR),1,NBASE,1,NBASE,NBASE,
+     &                     NBASE,1,LUPRI)
+               WRITE (LUPRI,'(//,1X,A,I3)') ' Fock matrix No.',I
+               CALL OUTPUT(FMAT(KSTR),1,NBASE,1,NBASE,NBASE,
+     &                     NBASE,1,LUPRI)
+               KSTR = NBASE*NBASE
+  300       CONTINUE
+            CALL FLSHFO(LUPRI)
+         END IF
+C
+C        Send MEMOK and Fock matrix
+C
+#if defined (VAR_MPI)
+         CALL MPIXSEND(MEMOK,1,'LOGICAL',MASTER,MTAG7)
+         CALL MPIXSEND(FMAT,NBASE*NBASE,'DOUBLE',MASTER,MTAG7)
+         CALL MPIXSEND(IJSTOT,1,'INTEGER',MASTER,MTAG7)
+         IF (TIMING) THEN
+            CALL MPIXSEND(IWHICH,IJSTOT,'INTEGER',MASTER,MTAG7)
+            CALL MPIXSEND(CLSCPU,IJSTOT,'DOUBLE' ,MASTER,MTAG7)
+         END IF
+      ELSE
+         CALL MPIXSEND(MEMOK ,1,'LOGICAL',MASTER,MTAG7)
+         CALL MPIXSEND(MEMADD,3,'INTEGER',MASTER,MTAG7)
+         CALL MPIXSEND(LWORK ,1,'INTEGER',MASTER,MTAG7)
+#endif
+      END IF
+C
+      RETURN
+      END
+! --- end of eri/eri2par.F ---

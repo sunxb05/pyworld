@@ -1,0 +1,416 @@
+\chapter{Continuum solvation calculations}\label{ch:solvent}
+
+In {\dalton} it is possible to describe the solvent implicitly by two
+different models, the polarizable continuum model (PCM, section
+\ref{sec:pcm}) or the Multiconfigurational Self-Consistent Reaction
+Field model (MCSCRF, section \ref{sec:mcscrf}).
+
+\section{Polarizable Continuum Model}
+\label{sec:pcm}
+
+This chapter describes how to run calculation using the integral
+equation formulation of the polarizable continuum model (IEF-PCM)
+implemented in {\dalton}\index{PCM}. IEF-PCM is implemented for SCF,
+DFT and MCSCF~\cite{cammi02}. For calculating molecular properties
+using MCSCF, linear~\cite{cammi03} and quadratic
+response~\cite{frediani05} IEF-PCM is implemented. At the HF/DFT level
+of theory, PCM is implemented up to cubic response~\cite{ferrighi07}.
+
+\begin{center}
+\fbox{
+\parbox[h][\height][l]{12cm}{
+\small
+\noindent
+{\bf Reference literature:}
+\begin{list}{}{}
+\item PCM-MCSCF: R.~Cammi, L.~Frediani, B.~Mennucci, J.~Tomasi, K.~Ruud, and K.~V.~Mikkelsen.\newblock {\em J.~Chem.~Phys.}, {\bf 117}, 13 (2002).
+\item PCM linear response: R.~Cammi, L.~Frediani, B.~Mennucci, and K.~Ruud.\newblock {\em J.~Chem.~Phys.}, {\bf 119}, 5818 (2003).
+\item PCM quadratic response: L.~Frediani, H.~{\AA}gren, L.~Ferrighi, and K.~Ruud.\newblock {\em J.~Chem.~Phys.}, {\bf 123}, 144117 (2005).
+\item PCM cubic response: L.~Ferrighi, L.~Frediani, and K.~Ruud.\newblock {\em J.~Phys.~Chem.~B.}, {\bf 111} 8965 (2007).
+\end{list}
+}}
+\end{center}
+
+\subsection{Input description}\label{sec:pcminp}
+
+The necessary input for a PCM calculation is given in the
+\Sec{*DALTON} input module. The most simple input file for a PCM
+calculation in {\dalton} will look like
+\begin{verbatim}
+**DALTON INPUT
+.RUN WAVEFUNCTION
+*PCM
+.SOLVNT
+WATER
+*PCMCAV
+**WAVEFUNCTION
+.HF
+**END OF
+\end{verbatim}
+An input file for a one-photon absorption DFT calculation for a
+molecule solvated in methanol can look like
+\begin{verbatim}
+**DALTON INPUT
+.RUN RESPONSE
+*PCM
+.SOLVNT
+CH3OH
+.NEQRSP
+*PCMCAV
+**WAVEFUNCTION
+.DFT
+B3LYP
+**RESPONSE
+*LINEAR
+.SINGLE
+.ROOTS
+5
+**END OF
+\end{verbatim}
+The solvent is given with its formula, in this case \verb|CH3OH|, but
+it is totally equivalent to specify it by its name
+\verb|METHANOL|. See Section~\ref{subsec:pcm} for a complete list of
+solvents supported by {\dalton}, and details about other
+keywords. With the keyword \Key{NEQRSP} we are specifying that the
+non-equilibrium contributions of the solvent to the response
+calculation are used.
+
+In the above example we are using the default way of creating the PCM
+cavity, that is putting a sphere on every atom with radii depending on
+the chemical element. It is also possible to add spheres with a
+specific radii to specific atoms. Then we have to use the \Key{ICESPH}
+keyword with method 2, as well as the \Key{NESFP} keyword where we
+specify the number of spheres. In the \Sec{PCMCAV} section, that have
+to be located directly after the \Sec{PCM} section, we specify on
+which atoms we will put spheres (\Key{INA}), and the radii of the
+spheres (\Key{RIN}). As an example we can calculate the one-photon
+absorption in pyridine solvated in water. The molecule input is given
+as
+\begin{verbatim}
+ATOMBASIS
+Structure of pyridine
+---------------------
+AtomTypes=3 Nosymmetry Angstrom
+  Charge=7.0    Atoms=1 Basis=aug-cc-pVDZ
+N       0.000000        0.000000        1.412474
+  Charge=6.0    Atoms=5 Basis=aug-cc-pVDZ
+C_a     0.000000        1.139102        0.718724
+C_b     0.000000       -1.139102        0.718724
+C_c     0.000000        1.193314       -0.670333
+C_d     0.000000       -1.193314       -0.670333
+C_e     0.000000        0.000000       -1.379701
+  Charge=1.0    Atoms=5 Basis=aug-cc-pVDZ
+H_a     0.000000        2.053276        1.301957
+H_b     0.000000       -2.053276        1.301957
+H_c     0.000000        2.148080       -1.178005
+H_d     0.000000       -2.148080       -1.178005
+H_e     0.000000        0.000000       -2.461606
+\end{verbatim}
+We want to put a sphere on every atom except the hydrogens. The
+nitrogen will get a sphere with radius 1.7 \angstrom{} while the carbon
+atoms will get spheres with radii 1.9 \angstrom{}. The maximum area of
+the tesserea has been reduced from the default 0.4 to 0.3 by the
+\Key{AREATS} keyword. The input would then look like
+\begin{verbatim}
+**DALTON INPUT
+.RUN RESPONSE
+*PCM
+.SOLVNT
+WATER
+.ICESPH
+2
+.NESFP
+6
+.NEQRSP
+*PCMCAV
+.INA
+1
+2
+3
+4
+5
+6
+.RIN
+1.7
+1.9
+1.9
+1.9
+1.9
+1.9
+.AREATS
+0.3  
+**WAVEFUNCTION
+.DFT
+B3LYP
+**RESPONSE
+*LINEAR
+.SINGLE
+.ROOTS
+2
+**END OF
+\end{verbatim}
+
+\section{Multiconfigurational Self-Consistent Reaction Field}\label{sec:mcscrf}
+
+This chapter describes the 
+Multiconfigurational Self-Consistent Reaction Field (MCSCRF) model
+as implemented in {\dalton}. The first section describes some
+considerations about the implementation  and the range of
+properties that may be evaluated with the present MCSCRF
+implementation. The second section gives two input examples for
+MCSCRF calculations.
+
+\subsection{General considerations}\label{sec:solventimpl}
+
+{\dalton} has the possibility of modeling the effect of a
+surrounding linear, homogeneous dielectric
+medium\index{dielectric medium} on a variety of molecular properties using
+SCF\index{SCF}\index{HF}\index{Hartree--Fock}\index{MCSCF} or MCSCF
+wave functions. This is achieved by the Multiconfigurational
+Self-Consistent Reaction Field
+(MCSCRF)\index{reaction field}\index{MCSCRF}
+approach~\cite{kvmedpsjpc91,kvmhahjajthjcp89}, where the solute is
+placed in a spherical cavity\index{cavity} and surrounded by the
+dielectric medium. The solvent response to the presence of the
+solute is modeled by a multipole 
+expansion\index{multipole expansion}, in {\dalton} in principle to infinite order, but
+practical applications show that the multipole expansion is
+usually converged at order $L=6$.
+
+In {\dalton} the solvent model is implemented both for SCF, DFT and MCSCF wave
+functions in a self-consistent manner as describes in
+Ref.~\cite{kvmedpsjpc91,kvmhahjajthjcp89}. In MCSCF calculations where
+MP2 orbitals is requested as starting orbitals for the MCSCF
+optimization, the solvent model will not be added before entering the
+MCSCF optimization stage, so MP2 gas-phase orbitals can be used as
+starting guess even though the solvent model has not been implemented
+for this wave function model. Note also that differential densities will be
+disabled in direct calculations when the solvent model is employed.
+
+As regards molecular properties, the solvent model has so far been
+extended to singlet linear, quadratic and cubic response, and  triplet
+linear response\index{linear response}\index{quadratic response}\index{cubic response}\index{triplet response}\index{response!linear}\index{response!quadratic}\index{response!cubic}\index{response!triplet}
+in the {\resp} module, both using equilibrium and non-equilibrium
+solvation. A number of properties and excitation energies can
+be calculated with the (MC)SCRF model, and several studies of such
+properties have been presented, and we refer to these papers for an
+overview of what can currently be calculated with the
+approach~\cite{kvmpjhjajjcp100,kvmylhapjjcp100}, including ESR
+hyperfine coupling
+constants~\cite{bfocobpjkvmjcp104}\index{hyperfine coupling}.
+
+In addition, a non-equilibrium
+solvation\index{non-equilibrium solvation} model has been implemented
+for molecular energies~\cite{kvmachahjajjcp103}. This model in needed
+when studying processes where the charge distribution of the solute
+cannot be expected to be in equilibrium with the charge distribution
+of the solvent, {\it e.g.\/} when comparing with experiments where light has
+been used as a perturbation.
+
+In the \aba\ module, the solvent model has been implemented for
+geometric distortions and nuclear shieldings and
+magnetizabilities\index{nuclear shielding}\index{magnetizability},
+and of course all the
+properties that do not use perturbation-dependent basis
+sets\index{perturbation-dependent basis set}, such as for
+instance indirect spin-spin coupling 
+constants\index{spin-spin coupling}. This is noteworthy, as
+although the program will probably give results for most results
+calculated using the solvent  model, these results will not
+necessarily be theoretically correct, due to lack of reorthonormalization
+contributions that have not been considered in the program. We
+therefore give a fairly complete literature reference of works that
+have been done with the
+program~\cite{kvmpjkrthjcp106,poakvmkrthjpc100}. Properties not
+included in this list are thus not trustworthy with the current
+version of {\dalton}.
+
+\subsection{Input description}\label{sec:solventinp}
+
+\begin{center}
+\fbox{
+\parbox[h][\height][l]{12cm}{
+\small
+\noindent
+{\bf Reference literature:}
+\begin{list}{}{}
+\item General reference: K.V.Mikkelsen, E.Dalgaard,
+P.Svanstr{\o}m. \newblock {\em J.Phys.Chem}, {\bf
+91},\hspace{0.25em}3081, (1987).
+\item General reference: K.V.Mikkelsen, H.{\AA}gren, H.J.Aa.Jensen,
+and T.Helgaker. \newblock {\em J.Chem.Phys.}, {\bf
+89},\hspace{0.25em}3086, (1988).
+\item Non-equilibrium solvation: K.V.Mikkelsen, A.Cesar, H.{\AA}gren,
+H.J.Aa.Jensen.\newblock {\em J.Chem.Phys.}, {\bf
+103},\hspace{0.25em}9010, (1995).
+\item Linear singlet response: K.V.Mikkelsen, P.J{\o}rgensen,
+H.J.Aa.Jensen.\newblock {\em J.Chem.Phys.}, {\bf
+100},\hspace{0.25em}6597, (1994).
+\item Linear triplet response: P.-O.\AA strand, K.V.Mikkelsen, P.J{\o}rgensen,
+K.Ruud and T.Helgaker. \newblock {\em J.~Chem.~Phys.}, {\bf 108},\hspace{0.25em} 2528 (1998).
+\item Hyperfine couplings: B.Fernandez, O.Christensen, O.Bludsky,
+P.J{\o}rgensen,
+K.V.Mikkelsen. \newblock {\em J.Chem.Phys.}, {\bf
+104},\hspace{0.25em}629, (1996).
+\item Magnetizabilities and nuclear shieldings: K.V.Mikkelsen,
+P.J{\o}rgensen, K.Ruud, and T.Helgaker. \newblock {\em J.Chem.Phys.}, {\bf
+106},\hspace{0.25em}1170, (1997).
+\item Molecular Hessian: P.-O.\AA strand, K.V.Mikkelsen, K.Ruud and
+T.Helgaker. \newblock {\em J.Phys.Chem.}, {\bf
+100},\hspace{0.25em}19771, (1996).
+\item Spin-spin couplings: P.-O.\AA strand, K.V.Mikkelsen, P.J{\o}rgensen,
+K.Ruud and T.Helgaker. \newblock {\em J.~Chem.~Phys.}, {\bf 108},\hspace{0.25em} 2528 (1998).
+\end{list}
+}}
+\end{center}
+
+
+The necessary input for a spherical cavity reaction field solvent calculation is given in the
+\Sec{*INTEGRALS} and \Sec{*WAVE FUNCTIONS} input modules. A typical input file
+for an SCF calculation of the nuclear shielding constants of a
+molecule in a dielectric medium will look
+like\index{nuclear shielding}\index{dielectric medium}:
+
+\begin{verbatim}
+**DALTON INPUT
+.RUN PROPERTIES
+**INTEGRALS
+*ONEINT
+.SOLVENT
+ 10
+**WAVE FUNCTIONS
+.HF
+*SOLVENT
+.DIELECTRIC CONSTANT
+ 78.5
+.MAX L
+ 10
+.CAVITY
+ 3.98
+**PROPERTIES
+.SHIELD
+**END OF DALTON INPUT
+\end{verbatim}
+
+In \Sec{*INTEGRALS} we request the evaluation of the undifferentiated solvent
+multipole integrals\index{multipole integral} as given in for instance
+Ref.~\cite{kvmhahjajthjcp89} by the keyword \Key{SOLVENT} in the
+\Sec{ONEINT} submodule. We request all
+integrals up to $L=10$ to be evaluated. This is needed if static or
+dynamic (response) properties
+calculations are to be done, but is not needed for a run of the
+wave function only (\Sec{*WAVE FUNCTIONS}).
+
+In \Sec{*WAVE FUNCTIONS} there is a separate input module for the
+solvent input,
+headed by the name \Sec{SOLVENT}. We refer to Sec.~\ref{ref-solinp}
+for a presentation of all possible keywords in this submodule. The
+interaction between the solute and the dielectric
+medium\index{dielectric medium} is
+characterized by three parameters; the dielectric
+constant\index{dielectric constant}, the cavity\index{cavity}
+radius (in atomic units), and the order of the multipole
+expansion\index{multipole expansion}. In the above input we have
+requested a dielectric constant of 78.5 (corresponding to water)
+through the keyword \Key{DIELECTRIC CONSTANT}, a cavity radius of 3.98 atomic
+units with the keyword \Key{CAVITY}, and the multipole expansion is to
+include all terms up to $L=10$, as can be seen from the keyword
+\Key{MAX L}. Note that this number cannot be larger than the number given for
+\Key{SOLVENT} in the \Sec{ONEINT} input module.
+
+\subsubsection{Geometry optimization}\label{sec:solventgeoopt}
+
+In the present release of the {\dalton} program, there are certain
+limitations imposed on the optimizing geometries using the solvent
+model. Only second-order geometry optimizations\index{geometry optimization}\index{geometry optimization!solvation}\index{solvation!geometry optimization}
+are available, and only through the general \Sec{WALK} module. 
+%Furthermore, symmetry
+%cannot be used during the geometry optimization, and care must be
+%exercised in order to turn off automatic symmetry detection in case of
+%Hartree--Fock calculations. 
+Thus the input for an SCF geometry optimization with the solvent model
+would look like:
+
+\begin{verbatim}
+**DALTON INPUT
+.WALK
+**INTEGRALS
+*ONEINT
+.SOLVENT
+ 10
+**WAVE FUNCTIONS
+.HF
+*SOLVENT
+.DIELECTRIC CONSTANT
+ 78.5
+.MAX L
+ 10
+.CAVITY
+ 3.98
+**PROPERTIES
+.VIBANA
+.SHIELD
+**END OF DALTON INPUT
+\end{verbatim}
+
+
+\subsubsection{Non-equilibrium solvation}\label{sec:solvnoneqrsp}
+
+This example describes calculations for non-equilibrium\index{non-equilibrium solvation}\index{solvation!non-equilibrium}
+solvation. Usually one starts with a calculation of a reference state
+(most often the ground state) with equilibrium solvation, using
+keyword \Key{INERSFINAL}. The interface file is then
+used (without user interference) for
+a non-equilibrium excited state calculation; keyword
+\Key{INERSINITIAL}.
+
+\begin{verbatim}
+**DALTON INPUT
+.RUN WAVE FUNCTIONS
+**INTEGRALS
+*ONEINT
+.SOLVENT
+ 10
+**WAVE FUNCTIONS
+.TITLE
+ 2-RAS(2p2p') : on F+ (1^D) in Glycol
+ Widmark (5432)-ANO Basis set
+.MCSCF
+*CONFIGURATION INPUT
+.SPIN MULTIPLICITY
+ 1
+.SYMMETRY
+ 1
+.INACTIVE ORBITALS
+ 1  0  0  0  0  0  0  0
+.ELECTRONS
+ 6
+.RAS1 SPACE
+ 0  0  0  0  0  0  0  0
+.RAS2 SPACE
+ 1  2  2  0  2  0  0  0
+.RAS3 SPACE
+ 8  4  4  3  4  3  3  1
+.RAS1 ELECTRONS
+ 0  0
+.RAS3 ELECTRONS
+ 0  2
+*OPTIMIZATION
+.NEO ALWAYS
+.OPTIMAL ORBITAL TRIAL VECTORS
+.MAX CI
+ 30
+*ORBITAL INPUT
+.MOSTART       | Note, we assume the existence of an SIRIUS.RST file
+ NEWORB
+*CI VECTOR
+.STARTOLDCI    | Note, we assume the existence of an SIRIUS.RST file
+*SOLVENT
+.CAVITY
+ 2.5133D0
+.INERSINITIAL     | initial state inertial polarization
+ 37.7D0  2.050D0  | static and optic dielectric constants for Glycol
+.MAX L
+ 10
+**END OF DALTON INPUT
+\end{verbatim}

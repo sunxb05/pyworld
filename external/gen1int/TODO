@@ -1,0 +1,29 @@
+!! Give future long- and short-term developments
+
+Short-term:
+ 1) implements and test new recurrence relations of effective core potential, and
+    model core potential (Version 1)
+ 2) tests SPHMOM (needs to transform from Cartesian to spherical moments, we may first
+    calculate several Cartesian moments integrals, and finally transforming them to
+    spherical moments), gen1int.F90, GAUPOT, overlap distribution, GTO values using
+    contracted GTOs
+ 3) implements and test the recurrence relations of diamagnetic spin-orbit coupling
+ 4) rewrites the DEBUG information in the codes, see the example in delta_hket.F90;
+    implements test suite using finite difference
+ 5) implements and test new recurrence relations of inverse square distance potential
+ 6) finishes the Python interface
+ 7) tries to improve carmom_moment.F90, CPU time and memory
+ 8) improves the speed for QMM/MM, divide the potential origins as (a) those different
+    from bra and ket centers, (b) bra center and (c) ket center
+ 9) tests hgto_to_sgto.F90
+10) evaluation of Boys function (see FIXME in aux_boys_vec.F90), see FIXME
+11) determines the symmetry of operators and derivatives (non-symmetric, symmetric
+    or antisymmetric)
+
+Long-term:
+1) adds spin-orbit ECP (see for instance Int. J. Quantum Chem. 40, 773)
+2) adds electron repulsion integrals?
+3) for auxiliary functions F_n(T) and G_n(T), we can not compute "any" give n and T
+4) other forms of operators, such as f(r)=1/r^m (m>=3), other versions of
+   model core potential
+5) periodic system?

@@ -1,0 +1,215 @@
+\documentclass{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage{tikz}
+
+%\usepackage[textwidth=1cm,textheight=22cm]{geometry}
+
+\setlength{\pdfpagewidth}{17.2cm}
+\setlength{\pdfpageheight}{13.6cm}
+%\setlength{\pdfvorigin}{25.4mm}
+
+\setlength{\textwidth}{17.2cm}
+\setlength{\textheight}{13.6cm}
+%\setlength{\evensidemargin}{-2.7cm}
+\setlength{\oddsidemargin}{-3.1cm}
+\setlength{\topmargin}{-4.45cm}
+\setlength{\headheight}{2cm}
+\setlength{\headsep}{0cm}
+
+\usetikzlibrary{shapes,arrows,shapes.geometric,calc,patterns}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{color}
+
+\begin{document}
+\pagestyle{empty}
+
+\tikzstyle{block}=[color=black, rectangle, draw, sharp corners, very thin, node distance=0mm]
+
+\tikzstyle{arrow}=[draw, very thick, -latex']
+
+\begin{tikzpicture}[scale=1, auto]
+
+\node[block, minimum width=60mm, minimum height=36mm](sub-df) at (169mm,127mm){};
+%
+\fill[black!80](139mm,127mm) rectangle (163mm,145mm);
+\fill[black!60](139mm,115mm) rectangle (163mm,127mm);
+\fill[black!30](139mm,109mm) rectangle (163mm,115mm);
+\fill[red](163mm,127mm) rectangle (181mm,145mm);
+\fill[red!60](163mm,115mm) rectangle (181mm,127mm);
+\fill[red!30](163mm,109mm) rectangle (181mm,115mm);
+\fill[blue](181mm,127mm) rectangle (193mm,145mm);
+\fill[blue!60](181mm,115mm) rectangle (193mm,127mm);
+\fill[blue!30](181mm,109mm) rectangle (193mm,115mm);
+\fill[green](193mm,127mm) rectangle (199mm,145mm);
+\fill[green!60](193mm,115mm) rectangle (199mm,127mm);
+\fill[green!30](193mm,109mm) rectangle (199mm,115mm);
+%
+\draw[very thin, dashed](139mm,139mm)--(199mm,139mm);
+\draw[very thin, dashed](139mm,133mm)--(199mm,133mm);
+\draw[very thin, dashed](139mm,127mm)--(199mm,127mm);
+\draw[very thin, dashed](139mm,121mm)--(199mm,121mm);
+\draw[very thin, dashed](139mm,115mm)--(199mm,115mm);
+\draw[very thin, dashed](145mm,145mm)--(145mm,109mm);
+\draw[very thin, dashed](151mm,145mm)--(151mm,109mm);
+\draw[very thin, dashed](157mm,145mm)--(157mm,109mm);
+\draw[very thin, dashed](163mm,145mm)--(163mm,109mm);
+\draw[very thin, dashed](169mm,145mm)--(169mm,109mm);
+\draw[very thin, dashed](175mm,145mm)--(175mm,109mm);
+\draw[very thin, dashed](181mm,145mm)--(181mm,109mm);
+\draw[very thin, dashed](187mm,145mm)--(187mm,109mm);
+\draw[very thin, dashed](193mm,145mm)--(193mm,109mm);
+%
+\node at (202mm,142mm) {$d_{xx}$};
+\node at (202mm,136mm) {$d_{xy}$};
+\node at (202mm,130mm) {$d_{yy}$};
+\node at (202mm,124mm) {$d_{xz}$};
+\node at (202mm,118mm) {$d_{yz}$};
+\node at (202mm,112mm) {$d_{zz}$};
+\node at (212mm,127mm) {$|\boldsymbol{m}|=2$};
+%
+\node at (142mm,107mm) {$\scriptstyle f_{xxx}$};
+\node at (148mm,107mm) {$\scriptstyle f_{xxy}$};
+\node at (154mm,107mm) {$\scriptstyle f_{xyy}$};
+\node at (160mm,107mm) {$\scriptstyle f_{yyy}$};
+\node at (166mm,107mm) {$\scriptstyle f_{xxz}$};
+\node at (172mm,107mm) {$\scriptstyle f_{xyz}$};
+\node at (178mm,107mm) {$\scriptstyle f_{yyz}$};
+\node at (184mm,107mm) {$\scriptstyle f_{xzz}$};
+\node at (190mm,107mm) {$\scriptstyle f_{yzz}$};
+\node at (196mm,107mm) {$\scriptstyle f_{zzz}$};
+\node at (167mm,102mm) {$|\boldsymbol{n}|=3$};
+
+\node [single arrow, fill=red!50, minimum height=28mm, minimum width=8mm, %
+  single arrow head extend=2mm, single arrow head indent=1mm] %
+  at (123.5mm,127mm) {};
+
+\node[block, minimum width=30mm, minimum height=126mm](sub-gs) at (94mm,92mm){};
+%
+\fill[black!80](79mm,137mm) rectangle (82mm,155mm);
+\fill[black!60](79mm,107mm) rectangle (82mm,119mm);
+\fill[black!30](79mm,83mm) rectangle (82mm,89mm);
+%
+\fill[black!80](82mm,131mm) rectangle (85mm,149mm);
+\fill[black!60](82mm,101mm) rectangle (85mm,113mm);
+\fill[black!30](82mm,77mm) rectangle (85mm,83mm);
+%
+\fill[black!80](85mm,125mm) rectangle (88mm,143mm);
+\fill[black!60](85mm,95mm) rectangle (88mm,107mm);
+\fill[black!30](85mm,71mm) rectangle (88mm,77mm);
+%
+\fill[black!80](88mm,119mm) rectangle (91mm,137mm);
+\fill[black!60](88mm,89mm) rectangle (91mm,101mm);
+\fill[black!30](88mm,65mm) rectangle (91mm,71mm);
+%
+\draw[very thin, dashed](91mm,29mm)--(91mm,155mm);
+%
+\fill[red](91mm,101mm) rectangle (94mm,119mm);
+\fill[red!60](91mm,77mm) rectangle (94mm,89mm);
+\fill[red!30](91mm,59mm) rectangle (94mm,65mm);
+%
+\fill[red](94mm,95mm) rectangle (97mm,113mm);
+\fill[red!60](94mm,71mm) rectangle (97mm,83mm);
+\fill[red!30](94mm,53mm) rectangle (97mm,59mm);
+%
+\fill[red](97mm,89mm) rectangle (100mm,107mm);
+\fill[red!60](97mm,65mm) rectangle (100mm,77mm);
+\fill[red!30](97mm,47mm) rectangle (100mm,53mm);
+%
+\draw[very thin, dashed](100mm,29mm)--(100mm,155mm);
+%
+\fill[blue](100mm,71mm) rectangle (103mm,89mm);
+\fill[blue!60](100mm,53mm) rectangle (103mm,65mm);
+\fill[blue!30](100mm,41mm) rectangle (103mm,47mm);
+%
+\fill[blue](103mm,65mm) rectangle (106mm,83mm);
+\fill[blue!60](103mm,47mm) rectangle (106mm,59mm);
+\fill[blue!30](103mm,35mm) rectangle (106mm,41mm);
+%
+\draw[very thin, dashed](106mm,29mm)--(106mm,155mm);
+%
+\fill[green](106mm,47mm) rectangle (109mm,65mm);
+\fill[green!60](106mm,35mm) rectangle (109mm,47mm);
+\fill[green!30](106mm,29mm) rectangle (109mm,35mm);
+%
+\draw[very thin, dashed](79mm,149mm)--(109mm,149mm);
+\draw[very thin, dashed](79mm,143mm)--(109mm,143mm);
+\draw[very thin, dashed](79mm,137mm)--(109mm,137mm);
+\draw[very thin, dashed](79mm,131mm)--(109mm,131mm);
+\draw[very thin, dashed](79mm,125mm)--(109mm,125mm);
+\draw[very thin, dashed](79mm,119mm)--(109mm,119mm);
+\draw[very thin, dashed](79mm,113mm)--(109mm,113mm);
+\draw[very thin, dashed](79mm,107mm)--(109mm,107mm);
+\draw[very thin, dashed](79mm,101mm)--(109mm,101mm);
+\draw[very thin, dashed](79mm,95mm)--(109mm,95mm);
+\draw[very thin, dashed](79mm,89mm)--(109mm,89mm);
+\draw[very thin, dashed](79mm,83mm)--(109mm,83mm);
+\draw[very thin, dashed](79mm,77mm)--(109mm,77mm);
+\draw[very thin, dashed](79mm,71mm)--(109mm,71mm);
+\draw[very thin, dashed](79mm,65mm)--(109mm,65mm);
+\draw[very thin, dashed](79mm,59mm)--(109mm,59mm);
+\draw[very thin, dashed](79mm,53mm)--(109mm,53mm);
+\draw[very thin, dashed](79mm,47mm)--(109mm,47mm);
+\draw[very thin, dashed](79mm,41mm)--(109mm,41mm);
+\draw[very thin, dashed](79mm,35mm)--(109mm,35mm);
+%
+\node at (73mm,152mm) {$g_{xxxxx}$};
+\node at (73mm,146mm) {$g_{xxxxy}$};
+\node at (73mm,140mm) {$g_{xxxyy}$};
+\node at (73mm,134mm) {$g_{xxyyy}$};
+\node at (73mm,128mm) {$g_{xyyyy}$};
+\node at (73mm,122mm) {$g_{yyyyy}$};
+\node at (73mm,116mm) {$g_{xxxxz}$};
+\node at (73mm,110mm) {$g_{xxxyz}$};
+\node at (73mm,104mm) {$g_{xxyyz}$};
+\node at (73mm,98mm) {$g_{xyyyz}$};
+\node at (73mm,92mm) {$g_{yyyyz}$};
+\node at (73mm,86mm) {$g_{xxxzz}$};
+\node at (73mm,80mm) {$g_{xxyzz}$};
+\node at (73mm,74mm) {$g_{xyyzz}$};
+\node at (73mm,68mm) {$g_{yyyzz}$};
+\node at (73mm,62mm) {$g_{xxzzz}$};
+\node at (73mm,56mm) {$g_{xyzzz}$};
+\node at (73mm,50mm) {$g_{yyzzz}$};
+\node at (73mm,44mm) {$g_{xzzzz}$};
+\node at (73mm,38mm) {$g_{yzzzz}$};
+\node at (73mm,32mm) {$g_{zzzzz}$};
+\node at (57mm,92mm) {$|\boldsymbol{m}+\boldsymbol{n}|=5$};
+%
+\node at (94mm,27mm) {$s$};
+\node at (94mm,23mm) {$|\boldsymbol{n}|=0$};
+%
+\path[arrow](95mm,137mm)--node[yshift=2mm]{$s_{mn}=s_{mn}+|\boldsymbol{m}|$}(95mm,125mm);
+\path[arrow](86.5mm,125mm)--node[yshift=0mm]{$w_{mn}=w_{mn}+i_{n}$}(86.5mm,107mm);
+
+\node at (170mm,95mm) (algorithm) {\small\textbf{Algorithm}};
+\node[block, color=black, fill=black!5, text width=22em, text badly ragged, below of=algorithm, yshift=-38mm]%
+  {\footnotesize
+   $s_{mn}=0$\\
+   ! loops over the $xyz$ components of $\boldsymbol{n}$-shell\\
+   $w_{n}=0$\\
+   do $i_{n}$ = $|\boldsymbol{n}|$, $0$, $-1$\\
+     \hspace{1em}do $j_{n}$ = $0$, $i_{n}$\\
+       \hspace{2em}$s_{mn}=s_{mn}+1$\\
+       \hspace{2em}$w_{n}=w_{n}+1$\\
+       \hspace{2em}! loops over the $xyz$ components of $\boldsymbol{m}$-shell\\
+       \hspace{2em}$w_{m}=0$\\
+       \hspace{2em}$w_{mn}=s_{mn}$\\
+       \hspace{2em}do $i_{m}$ = $|\boldsymbol{m}|$, $0$, $-1$\\
+         \hspace{3em}do $j_{m}$ = $0$, $i_{m}$\\
+           \hspace{4em}$w_{m}=w_{m}+1$\\
+           \hspace{4em}$w_{mn}=w_{mn}+1$\\
+           \hspace{4em}$\left\{w_{m},w_{n}\right\}=\left\{w_{mn}\right\}$\\
+         \hspace{3em}end do\\
+         \hspace{3em}$w_{mn}=w_{mn}+i_{n}$\\
+       \hspace{2em}end do\\
+     \hspace{1em}end do\\
+     \hspace{1em}$s_{mn}=s_{mn}+|\boldsymbol{m}|$\\
+   end do};
+
+\end{tikzpicture}
+
+\end{document}

@@ -1,0 +1,16 @@
+include cmake/*
+include doc/manual.tex
+include doc/manual.pdf
+include doc/refs.bib
+include doc/figures/*
+include doc/doxygen
+include include/* include/*/*
+include src/* src/*/*
+exclude src/py_*.F90 src/*/py_*.F90
+include test_f90/* test_f90/*/*
+include test_py/*
+include tools/*
+include AUTHORS COPYING COPYING.LESSER ChangeLog
+include INSTALL MANIFEST.in NEWS README TODO
+include CMakeLists.txt CTestConfig.cmake Doxyfile
+include setup.cfg configure.ac Makefile.am

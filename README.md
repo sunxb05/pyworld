@@ -1,50 +1,71 @@
-## Badges
+Nightly runs on full testset: https://testboard.org/cdash/index.php?project=Dalton
 
-(Customize these badges with your own links, and check https://shields.io/ or https://badgen.net/ to see which other badges are available.)
+## Dalton links
 
-| fair-software.eu recommendations | |
-| :-- | :--  |
-| (1/5) code repository              | [![github repo badge](https://img.shields.io/badge/github-repo-000.svg?logo=github&labelColor=gray&color=blue)](https://github.com/sunxb05/pyworld) |
-| (2/5) license                      | [![github license badge](https://img.shields.io/github/license/sunxb05/pyworld)](https://github.com/sunxb05/pyworld) |
-| (3/5) community registry           | [![RSD](https://img.shields.io/badge/rsd-pyworld-00a3e3.svg)](https://www.research-software.nl/software/pyworld) [![workflow pypi badge](https://img.shields.io/pypi/v/pyworld.svg?colorB=blue)](https://pypi.python.org/project/pyworld/) |
-| (4/5) citation                     | [![DOI](https://zenodo.org/badge/DOI/<replace-with-created-DOI>.svg)](https://doi.org/<replace-with-created-DOI>) |
-| (5/5) checklist                    | [![workflow cii badge](https://bestpractices.coreinfrastructure.org/projects/<replace-with-created-project-identifier>/badge)](https://bestpractices.coreinfrastructure.org/projects/<replace-with-created-project-identifier>) |
-| howfairis                          | [![fair-software badge](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow)](https://fair-software.eu) |
-| **Other best practices**           | &nbsp; |
-| Static analysis                    | [![workflow scq badge](https://sonarcloud.io/api/project_badges/measure?project=sunxb05_pyworld&metric=alert_status)](https://sonarcloud.io/dashboard?id=sunxb05_pyworld) |
-| Coverage                           | [![workflow scc badge](https://sonarcloud.io/api/project_badges/measure?project=sunxb05_pyworld&metric=coverage)](https://sonarcloud.io/dashboard?id=sunxb05_pyworld) |
-| Documentation                      | [![Documentation Status](https://readthedocs.org/projects/pyworld/badge/?version=latest)](https://pyworld.readthedocs.io/en/latest/?badge=latest) |
-| **GitHub Actions**                 | &nbsp; |
-| Build                              | [![build](https://github.com/sunxb05/pyworld/actions/workflows/build.yml/badge.svg)](https://github.com/sunxb05/pyworld/actions/workflows/build.yml) |
-| Citation data consistency               | [![cffconvert](https://github.com/sunxb05/pyworld/actions/workflows/cffconvert.yml/badge.svg)](https://github.com/sunxb05/pyworld/actions/workflows/cffconvert.yml) |
-| SonarCloud                         | [![sonarcloud](https://github.com/sunxb05/pyworld/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/sunxb05/pyworld/actions/workflows/sonarcloud.yml) |
-| MarkDown link checker              | [![markdown-link-check](https://github.com/sunxb05/pyworld/actions/workflows/markdown-link-check.yml/badge.svg)](https://github.com/sunxb05/pyworld/actions/workflows/markdown-link-check.yml) |
+- [Home page](http://daltonprogram.org/)
+- [Forum](http://forum.daltonprogram.org/)
+- [Article](http://onlinelibrary.wiley.com/doi/10.1002/wcms.1172/abstract)
 
-## How to use pyworld
 
-Program to understand world
+## Quick start
 
-The project setup is documented in [project_setup.md](project_setup.md). Feel free to remove this document (and/or the link to this document) if you don't need it.
+Note that it is currently not practical to download the source using the
+download button on GitLab, because it will not include the submodules that are
+required to build Dalton. Instead you should clone the repository as described
+below.
 
-## Installation
-
-To install pyworld from GitHub repository, do:
-
-```console
-git clone https://github.com/sunxb05/pyworld.git
-cd pyworld
-python3 -m pip install .
+Clone the repository:
+```
+$ git clone --recursive https://gitlab.com/dalton/dalton.git
 ```
 
-## Documentation
+This will fetch the entire repository in a directory called *dalton*. By default
+it checks out the master branch which is the main development branch. To
+checkout a specific release version, run the following commands from inside the
+*dalton* directory:
+```
+$ git checkout Dalton2020.1
+$ git submodule update
+```
+where you replace *Dalton2020.1* by the release version that you are
+interested in. The list of past releases available in this repository can be
+found here: https://gitlab.com/dalton/dalton/-/releases.
 
-Include a link to your project's full documentation here.
+You can also clone the release version directly as:
+```
+$ git clone --recursive -b Dalton2020.1 https://gitlab.com/dalton/dalton.git
+```
 
-## Contributing
+In case you did not include the `--recursive` argument when you cloned the
+repository, it is necessary to run the following two commands:
+```
+$ git submodule update --init --recursive
+```
 
-If you want to contribute to the development of pyworld,
-have a look at the [contribution guidelines](CONTRIBUTING.md).
+To build the code, perform the following steps:
+```
+$ ./setup
+$ cd build
+$ make [-j4]
+```
 
-## Credits
+There are several setup options available, e.g., for setting up an MPI build.
+To see the available options run:
+```
+$ ./setup --help
+```
 
-This package was created with [Cookiecutter](https://github.com/audreyr/cookiecutter) and the [NLeSC/python-template](https://github.com/NLeSC/python-template).
+Once the build is complete, you can run the test set as:
+```
+$ ctest [-j4] -L dalton
+```
+
+To switch branch (or release tag), run the following two commands from the *dalton* directory:
+```
+$ git checkout feature-branch
+$ git submodule update
+```
+This can also be achieved in one step when you clone the repository:
+```
+$ git clone --recursive -b feature-branch https://gitlab.com/dalton/dalton.git
+```

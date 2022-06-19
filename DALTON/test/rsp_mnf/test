@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+# rsp_mnf
+# -------
+# Molecule:      O2
+# Wave Function: MCSCF (CAS) / ANO (Atombasis)
+# Test Purpose:  Atomic mean field (AMFI) linear response spin-orbit
+
+
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from runtest import version_info, get_filter, cli, run
+from runtest_config import configure
+
+assert version_info.major == 2
+
+f = [
+    get_filter(from_string='Atoms and basis sets',
+               num_lines=12,
+               abs_tolerance=1.0e-5),
+    get_filter(from_string='Cartesian Coordinates (a.u.)',
+               num_lines=6,
+               abs_tolerance=1.0e-8),
+    get_filter(string='Number of coordinates in each symmetry:',
+               abs_tolerance=1.0e-5),
+    get_filter(string='Number of orbitals in each symmetry:',
+               abs_tolerance=1.0e-5),
+    get_filter(string='Final MCSCF energy',
+               abs_tolerance=1.0e-10),
+    get_filter(string='@ Excitation energy :',
+               abs_tolerance=1.0e-8),
+    get_filter(string='@ Operator label: Z1MNF-SO; Transition moment :',
+               abs_tolerance=1.0e-8,
+               ignore_sign=True),
+    get_filter(string='@ Spin-orbit coupling constant (Z1MNF-SO) :',
+               abs_tolerance=1.0e-5,
+               ignore_sign=True),
+]
+
+options = cli()
+
+ierr = 0
+for inp in ['rsp_mnf.dal']:
+    for mol in ['rsp_mnf.mol']:
+        ierr += run(options,
+                    configure,
+                    input_files=[inp, mol],
+                    filters={'out': f},
+                    accepted_errors=['not implemented for parallel calculations'])
+
+sys.exit(ierr)
