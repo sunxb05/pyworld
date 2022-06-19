@@ -6,7 +6,7 @@ variables:
 
 
 before_install:  
-  - sudo apt-get install -y -q gcc gcc-c++ gcc-gfortran openblas openblas-devel lapack lapack-devel
+  - sudo apt-get -y install -q gcc gcc-c++ gcc-gfortran openblas openblas-devel lapack lapack-devel
                       mpich mpich-devel openmpi openmpi-devel hdf5 hdf5-devel git make cmake
                       python python3 redhat-rpm-config findutils which procps-ng coreutils
   - . ~/.bash_profile
@@ -27,7 +27,7 @@ coverage:
   except:
     - schedules
   script:
-    - sudo apt-get install -y -q gcovr
+    - sudo apt-get -y install -q gcovr
     - module load mpi/mpich-x86_64
     - mpirun --version
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
