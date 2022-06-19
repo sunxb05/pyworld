@@ -5,6 +5,7 @@ variables:
   GET_SOURCES_ATTEMPTS: "10"
 
 before_script:
+  - yum install epel-release -y
   - dnf upgrade -y -q
   - dnf install -y -q gcc gcc-c++ gcc-gfortran openblas openblas-devel lapack lapack-devel
                       mpich mpich-devel openmpi openmpi-devel hdf5 hdf5-devel git make cmake
