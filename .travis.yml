@@ -6,7 +6,7 @@ variables:
 
 before_script:
 
-  - yum install -y -q gcc gcc-c++ gcc-gfortran openblas openblas-devel lapack lapack-devel
+  - apt-get install -y -q gcc gcc-c++ gcc-gfortran openblas openblas-devel lapack lapack-devel
                       mpich mpich-devel openmpi openmpi-devel hdf5 hdf5-devel git make cmake
                       python python3 redhat-rpm-config findutils which procps-ng coreutils
   - . ~/.bash_profile
@@ -27,7 +27,7 @@ coverage:
   except:
     - schedules
   script:
-    - yum install -y -q gcovr
+    - apt-get install -y -q gcovr
     - module load mpi/mpich-x86_64
     - mpirun --version
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
@@ -57,10 +57,10 @@ intel:
   allow_failure: true
   before_script:
   
-    - yum install -y -q gcc gcc-c++ gcc-gfortran git make cmake python python3
+    - apt-get install -y -q gcc gcc-c++ gcc-gfortran git make cmake python python3
                         redhat-rpm-config findutils which procps-ng coreutils
-    - mv maintenance/oneAPI.repo /etc/yum.repos.d
-    - yum install -y intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl
+    - mv maintenance/oneAPI.repo /etc/apt-get.repos.d
+    - apt-get install -y intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl
     - set +e
     - . /opt/intel/oneapi/setvars.sh
     - set -e
@@ -90,10 +90,10 @@ intel-mpi:
   allow_failure: true
   before_script:
   
-    - yum install -y -q gcc gcc-c++ gcc-gfortran git make cmake python python3
+    - apt-get install -y -q gcc gcc-c++ gcc-gfortran git make cmake python python3
                         redhat-rpm-config findutils which procps-ng coreutils
-    - mv maintenance/oneAPI.repo /etc/yum.repos.d
-    - yum install -y intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl intel-oneapi-mpi intel-oneapi-mpi-devel
+    - mv maintenance/oneAPI.repo /etc/apt-get.repos.d
+    - apt-get install -y intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl intel-oneapi-mpi intel-oneapi-mpi-devel
     - set +e
     - . /opt/intel/oneapi/setvars.sh
     - set -e
@@ -139,7 +139,7 @@ gcc-5-int64:
   except:
     - schedules
   script:
-    - yum install -y -q lapack64 lapack64-devel
+    - apt-get install -y -q lapack64 lapack64-devel
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
     - python setup --int64 --blas=none --lapack=builtin --explicit-libs="-lopenblas64" --type=release
     - cd build
@@ -178,7 +178,7 @@ gcc-5-ompi-1.8-int64:
   except:
     - schedules
   script:
-    - yum install -y -q lapack64 lapack64-devel
+    - apt-get install -y -q lapack64 lapack64-devel
     - module load mpi/openmpi-x86_64
     - mpirun --version
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
@@ -212,7 +212,7 @@ gcc-6-int64:
   except:
     - schedules
   script:
-    - yum install -y -q lapack64 lapack64-devel
+    - apt-get install -y -q lapack64 lapack64-devel
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
     - python setup --int64 --blas=none --lapack=builtin --explicit-libs="-lopenblas64" --type=release
     - cd build
@@ -244,7 +244,7 @@ gcc-7-int64:
   except:
     - schedules
   script:
-    - yum install -y -q lapack64 lapack64-devel
+    - apt-get install -y -q lapack64 lapack64-devel
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
     - python setup --int64 --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
     - cd build
@@ -276,7 +276,7 @@ gcc-8-int64:
   except:
     - schedules
   script:
-    - yum install -y -q lapack64 lapack64-devel
+    - apt-get install -y -q lapack64 lapack64-devel
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
     - python setup --int64 --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
     - cd build
@@ -314,7 +314,7 @@ gcc-8-ompi-2.1-int64:
   except:
     - schedules
   script:
-    - yum install -y -q lapack64 lapack64-devel
+    - apt-get install -y -q lapack64 lapack64-devel
     - module load mpi/openmpi-x86_64
     - mpirun --version
     - alternatives --install /usr/bin/python python /usr/bin/python3 1
@@ -364,7 +364,7 @@ gcc-9-int64:
   except:
     - schedules
   script:
-    - yum install -y -q lapack64 lapack64-devel
+    - apt-get install -y -q lapack64 lapack64-devel
     - export FFLAGS="-I/usr/lib64/gfortran/modules"
     - python setup --int64 --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
     - cd build
@@ -422,7 +422,7 @@ gcc-9-ompi-4.0-int64:
   except:
     - schedules
   script:
-    - yum install -y -q lapack64 lapack64-devel
+    - apt-get install -y -q lapack64 lapack64-devel
     - module load mpi/openmpi-x86_64
     - mpirun --version
     - export FFLAGS="-I/usr/lib64/gfortran/modules"
@@ -443,7 +443,7 @@ gcc-9-mpich-3.3-int64:
     - schedules
   allow_failure: true
   script:
-    - yum install -y -q lapack64 lapack64-devel
+    - apt-get install -y -q lapack64 lapack64-devel
     - module load mpi/mpich-x86_64
     - mpirun --version
     - export FFLAGS="-I/usr/lib64/gfortran/modules"
@@ -477,7 +477,7 @@ gcc-10-int64:
   except:
     - schedules
   script:
-    - yum install -y -q lapack64 lapack64-devel
+    - apt-get install -y -q lapack64 lapack64-devel
     - export FFLAGS="-I/usr/lib64/gfortran/modules"
     - python setup --int64 --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
     - cd build
@@ -534,7 +534,7 @@ nightly-gcc-mpi-int64:
     - schedules
   allow_failure: true
   script:
-    - yum install -y -q lapack64 lapack64-devel
+    - apt-get install -y -q lapack64 lapack64-devel
     - module load mpi/openmpi-x86_64
     - mpirun --version
     - python setup --int64 --mpi --blas=none --lapack=none --explicit-libs="-lopenblas64 -llapack64_" --type=release
@@ -555,10 +555,10 @@ nightly-intel:
   allow_failure: true
   before_script:
   
-    - yum install -y -q gcc gcc-c++ gcc-gfortran git make cmake python python3
+    - apt-get install -y -q gcc gcc-c++ gcc-gfortran git make cmake python python3
                         redhat-rpm-config findutils which procps-ng coreutils
-    - mv maintenance/oneAPI.repo /etc/yum.repos.d
-    - yum install -y intel-oneapi-ifort intel-oneapi-icc intel-oneapi-mkl intel-oneapi-mpi intel-oneapi-mpi-devel
+    - mv maintenance/oneAPI.repo /etc/apt-get.repos.d
+    - apt-get install -y intel-oneapi-ifort intel-oneapi-icc intel-oneapi-mkl intel-oneapi-mpi intel-oneapi-mpi-devel
     - set +e
     - . /opt/intel/inteloneapi/setvars.sh
     - set -e
