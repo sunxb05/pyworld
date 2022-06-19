@@ -60,7 +60,7 @@ intel:
     - sudo apt-get -y  install -q gcc gcc-c++ gcc-gfortran git make cmake python python3
                         redhat-rpm-config findutils which procps-ng coreutils
     - mv maintenance/oneAPI.repo /etc/apt-get.repos.d
-    - sudo apt-get install -y intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl
+    - sudo apt-get  -y install intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl
     - set +e
     - . /opt/intel/oneapi/setvars.sh
     - set -e
