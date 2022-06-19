@@ -57,7 +57,7 @@ intel:
   allow_failure: true
   before_script:
     
-    - sudo apt-get install -y -q gcc gcc-c++ gcc-gfortran git make cmake python python3
+    - sudo apt-get -y  install -q gcc gcc-c++ gcc-gfortran git make cmake python python3
                         redhat-rpm-config findutils which procps-ng coreutils
     - mv maintenance/oneAPI.repo /etc/apt-get.repos.d
     - sudo apt-get install -y intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl
@@ -90,10 +90,10 @@ intel-mpi:
   allow_failure: true
   before_script:
     
-    - sudo apt-get install -y -q gcc gcc-c++ gcc-gfortran git make cmake python python3
+    - sudo apt-get -y  install -q gcc gcc-c++ gcc-gfortran git make cmake python python3
                         redhat-rpm-config findutils which procps-ng coreutils
     - mv maintenance/oneAPI.repo /etc/apt-get.repos.d
-    - sudo apt-get install -y intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl intel-oneapi-mpi intel-oneapi-mpi-devel
+    - sudo apt-get -y install intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mkl intel-oneapi-mpi intel-oneapi-mpi-devel
     - set +e
     - . /opt/intel/oneapi/setvars.sh
     - set -e
