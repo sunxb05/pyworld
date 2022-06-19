@@ -1,9 +1,0 @@
-BASIS
-STO-3G
-LiH fight me
-------------------------
-AtomTypes=2 NoSymmetry Angstrom
-Atoms=1 Charge=3
-Li           -.620668   -1.294822      .054251
-Atoms=1 Charge=1
-H           -2.508043   -1.382001     .040282

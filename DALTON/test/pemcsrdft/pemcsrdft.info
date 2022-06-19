@@ -1,5 +1,0 @@
-   pemcsrdft
-   -----------
-   Molecule:         LiH and two classical water molecules
-   Wave Function:    CASsrDFT (2,2) / STO-3G
-   Test Purpose:     Test of energy, dipole moment and excitation energy through ABACUS
