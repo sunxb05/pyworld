@@ -79,7 +79,7 @@ html_sidebars = {
 
 # -- Use autoapi.extension to run sphinx-apidoc -------
 
-autoapi_dirs = ['../SPEC','../TRANSPORT']
+autoapi_dirs = ['../SPEC','../TRANSPORT','../source']
 
 # -- Options for HTML output ----------------------------------------------
 
