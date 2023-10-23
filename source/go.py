@@ -5,7 +5,10 @@ from model_trainer import ModelTrainer
 import sys
 import numpy as np
 def main():
-    
+    """
+    comments
+    """
+
     # 加载和处理数据
     data_processor = DataProcessing("data/coordinates.npy", "data/atom_types.npy", "data/ed.npy", "data/ener.npy", "data/forces.npy", 25)
     x_train, y_train_density, y_train_energy, y_train_force, x_test, y_test_density, y_test_energy, y_test_force, num_atoms, num_atom_types = data_processor.get_train_test_data()
