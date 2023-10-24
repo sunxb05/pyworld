@@ -3,5 +3,5 @@ import os
 from setuptools import setup
 
 
-# see setup.cfg for more
+# see setup.cfg for more information
 setup()
