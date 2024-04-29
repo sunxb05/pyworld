@@ -95,7 +95,7 @@ extensions = [
     # "myst_nb",
     # "numpydoc",
     # "breathe",
-    "exhale",
+    # "exhale",
 ]
 
 # breathe_domain_by_extension = {
