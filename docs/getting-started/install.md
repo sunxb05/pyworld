@@ -1,1 +1,0 @@
-../install/easy-install.md
