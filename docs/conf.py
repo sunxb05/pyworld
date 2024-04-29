@@ -27,7 +27,7 @@ from datetime import (
 # )
 
 sys.path.append(os.path.dirname(__file__))
-import sphinx_contrib_exhale_multiproject  # noqa: F401
+# import sphinx_contrib_exhale_multiproject  # noqa: F401
 
 # -- Project information -----------------------------------------------------
 
@@ -103,39 +103,39 @@ breathe_projects = {
 }
 breathe_default_project = "cc"
 
-exhale_args = {
-    "doxygenStripFromPath": "..",
-    # Suggested optional arguments
-    # "createTreeView":        True,
-    # TIP: if using the sphinx-bootstrap-theme, you need
-    # "treeViewIsBootstrap": True,
-    "exhaleExecutesDoxygen": True,
-    # "unabridgedOrphanKinds": {"namespace"}
-    # "listingExclude": [r"namespace_*"]
-}
-exhale_projects_args = {
-    "cc": {
-        "containmentFolder": "./API_CC",
-        "exhaleDoxygenStdin": "INPUT = ../source/api_cc/include/",
-        "rootFileTitle": "C++ API",
-        "rootFileName": "api_cc.rst",
-    },
-    "c": {
-        "containmentFolder": "./api_c",
-        "exhaleDoxygenStdin": "INPUT = ../source/api_c/include/",
-        "rootFileTitle": "C API",
-        "rootFileName": "api_c.rst",
-    },
-    "core": {
-        "containmentFolder": "./api_core",
-        "exhaleDoxygenStdin": """INPUT = ../source/lib/include/
-                                 PREDEFINED += GOOGLE_CUDA
-                                              TENSORFLOW_USE_ROCM
-        """,
-        "rootFileTitle": "Core API",
-        "rootFileName": "api_core.rst",
-    },
-}
+# exhale_args = {
+#     "doxygenStripFromPath": "..",
+#     # Suggested optional arguments
+#     # "createTreeView":        True,
+#     # TIP: if using the sphinx-bootstrap-theme, you need
+#     # "treeViewIsBootstrap": True,
+#     "exhaleExecutesDoxygen": True,
+#     # "unabridgedOrphanKinds": {"namespace"}
+#     # "listingExclude": [r"namespace_*"]
+# }
+# exhale_projects_args = {
+#     "cc": {
+#         "containmentFolder": "./API_CC",
+#         "exhaleDoxygenStdin": "INPUT = ../source/api_cc/include/",
+#         "rootFileTitle": "C++ API",
+#         "rootFileName": "api_cc.rst",
+#     },
+#     "c": {
+#         "containmentFolder": "./api_c",
+#         "exhaleDoxygenStdin": "INPUT = ../source/api_c/include/",
+#         "rootFileTitle": "C API",
+#         "rootFileName": "api_c.rst",
+#     },
+#     "core": {
+#         "containmentFolder": "./api_core",
+#         "exhaleDoxygenStdin": """INPUT = ../source/lib/include/
+#                                  PREDEFINED += GOOGLE_CUDA
+#                                               TENSORFLOW_USE_ROCM
+#         """,
+#         "rootFileTitle": "Core API",
+#         "rootFileName": "api_core.rst",
+#     },
+# }
 
 # Tell sphinx what the primary language being documented is.
 # primary_domain = 'cpp'
