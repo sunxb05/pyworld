@@ -9,7 +9,7 @@ build:
 python:
   install:
     - method: pip
-      path: doc
+      path: .
       extra_requirements:
         - dev
 
