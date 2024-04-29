@@ -77,7 +77,7 @@ def setup(app):
 # ]
 
 extensions = [
-    "deepmodeling_sphinx",
+    # "deepmodeling_sphinx",
     "dargs.sphinx",
     "sphinx_rtd_theme",
     "myst_nb",
@@ -91,6 +91,12 @@ extensions = [
     "breathe",
     "exhale",
     "sphinxcontrib.bibtex",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.coverage",
+    "sphinx.ext.doctest",
+    "sphinx.ext.todo",
+    "autoapi.extension",
+
 ]
 
 # breathe_domain_by_extension = {
@@ -245,7 +251,7 @@ author = u"Xiaobo Sun"
 version = "0.1.0"
 # The full version, including alpha/beta/rc tags.
 release = version
-needs_sphinx = '2.1'
+# needs_sphinx = '2.1'
 # -- General configuration ------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
