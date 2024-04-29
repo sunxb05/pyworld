@@ -78,25 +78,24 @@ def setup(app):
 
 extensions = [
     # "deepmodeling_sphinx",
-    "dargs.sphinx",
+    # "dargs.sphinx",
     "sphinx_rtd_theme",
-    "myst_nb",
     "sphinx.ext.autosummary",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
     "sphinxarg.ext",
-    "numpydoc",
-    "breathe",
-    "exhale",
     "sphinxcontrib.bibtex",
     "sphinx.ext.autodoc",
     "sphinx.ext.coverage",
     "sphinx.ext.doctest",
     "sphinx.ext.todo",
     "autoapi.extension",
-
+    "myst_nb",
+    "numpydoc",
+    "breathe",
+    "exhale",
 ]
 
 # breathe_domain_by_extension = {
