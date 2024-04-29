@@ -1,2 +1,3 @@
+.[docs,cpu]
 sphinx>=2.1
 nbsphinx
