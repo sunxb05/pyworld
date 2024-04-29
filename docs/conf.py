@@ -94,7 +94,7 @@ extensions = [
     # "sphinxcontrib.bibtex",
     # "myst_nb",
     # "numpydoc",
-    "breathe",
+    # "breathe",
     "exhale",
 ]
 
