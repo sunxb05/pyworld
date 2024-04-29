@@ -91,7 +91,7 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.todo",
     "autoapi.extension",
-    "sphinxcontrib.bibtex",
+    # "sphinxcontrib.bibtex",
     "myst_nb",
     "numpydoc",
     "breathe",
