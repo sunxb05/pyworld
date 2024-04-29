@@ -1,12 +1,3 @@
-Nightly runs on full testset: https://testboard.org/cdash/index.php?project=Dalton
-
-## Dalton links
-
-- [Home page](http://daltonprogram.org/)
-- [Forum](http://forum.daltonprogram.org/)
-- [Article](http://onlinelibrary.wiley.com/doi/10.1002/wcms.1172/abstract)
-
-
 ## Quick start
 
 Note that it is currently not practical to download the source using the
