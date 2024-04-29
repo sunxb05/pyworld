@@ -18,13 +18,13 @@ from datetime import (
     date,
 )
 
-from deepmd.common import (
-    ACTIVATION_FN_DICT,
-    PRECISION_DICT,
-)
-from deepmd.utils.argcheck import (
-    list_to_doc,
-)
+# from deepmd.common import (
+#     ACTIVATION_FN_DICT,
+#     PRECISION_DICT,
+# )
+# from deepmd.utils.argcheck import (
+#     list_to_doc,
+# )
 
 sys.path.append(os.path.dirname(__file__))
 import sphinx_contrib_exhale_multiproject  # noqa: F401
@@ -173,10 +173,10 @@ import typing
 for typing_type in typing.__all__:
     numpydoc_xref_aliases[typing_type] = "typing.%s" % typing_type
 
-rst_epilog = f"""
-.. |ACTIVATION_FN| replace:: {list_to_doc(ACTIVATION_FN_DICT.keys())}
-.. |PRECISION| replace:: {list_to_doc(PRECISION_DICT.keys())}
-"""
+# rst_epilog = f"""
+# .. |ACTIVATION_FN| replace:: {list_to_doc(ACTIVATION_FN_DICT.keys())}
+# .. |PRECISION| replace:: {list_to_doc(PRECISION_DICT.keys())}
+# """
 
 # -- Options for HTML output -------------------------------------------------
 
