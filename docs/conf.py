@@ -93,7 +93,7 @@ extensions = [
     "autoapi.extension",
     # "sphinxcontrib.bibtex",
     # "myst_nb",
-    "numpydoc",
+    # "numpydoc",
     "breathe",
     "exhale",
 ]
