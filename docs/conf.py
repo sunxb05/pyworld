@@ -21,8 +21,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(here, '..')))
 
 # -- Project information -----------------------------------------------------
 
-project = u"MOMAP"
-copyright = u"2021, Xiaobo Sun"
+project = u"PyWorld"
+copyright = u"2024, Xiaobo Sun"
 author = u"Xiaobo Sun"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -79,7 +79,7 @@ html_sidebars = {
 
 # -- Use autoapi.extension to run sphinx-apidoc -------
 
-autoapi_dirs = ['../SPEC','../TRANSPORT','../source']
+autoapi_dirs = ['../source']
 
 # -- Options for HTML output ----------------------------------------------
 
